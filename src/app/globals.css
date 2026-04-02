@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #F0F7FF;
+  --card: #ffffff;
+  --text: #1e293b;
+  --text-muted: #64748b;
+}
+
+.dark {
+  --bg: #0F172A;
+  --card: #1E293B;
+  --text: #f1f5f9;
+  --text-muted: #94a3b8;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Inter", system-ui, sans-serif;
+  padding-bottom: 80px;
+}
+
+@media (min-width: 768px) {
+  body {
+    padding-bottom: 0;
+    padding-left: 80px;
+  }
+}

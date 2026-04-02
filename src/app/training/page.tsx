@@ -151,7 +151,7 @@ export default function TrainingPage() {
 
           {/* Today Hero */}
           <div className="rounded-[20px] overflow-hidden relative" style={{ height: 200 }}>
-            <img src={matchTrainingImage(planned)} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            <img src={matchTrainingImage(planned, userKey)} alt="" className="absolute inset-0 w-full h-full object-cover" />
             <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 20%, rgba(13,17,23,0.9) 100%)" }} />
             <div className="relative h-full p-5 flex flex-col justify-end text-white">
             {hasLogged ? (

@@ -50,16 +50,32 @@ export const TRAINING_IMAGES: Record<string, string> = {
   mobility: "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&h=400&fit=crop",
 };
 
-export function matchTrainingImage(typ: string): string {
+const TRAINING_IMAGES_MARIA: Record<string, string> = {
+  kraft: "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=800&h=400&fit=crop",
+  trx: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&h=400&fit=crop",
+  yoga: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&h=400&fit=crop",
+  laufen: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&h=400&fit=crop",
+  hyrox: "https://images.unsplash.com/photo-1550345332-09e3ac987658?w=800&h=400&fit=crop",
+  schwimmen: "https://images.unsplash.com/photo-1560089000-7433a4ebbd64?w=800&h=400&fit=crop",
+  stretching: "https://images.unsplash.com/photo-1552196563-55cd4e45efb3?w=800&h=400&fit=crop",
+  meditation: "https://images.unsplash.com/photo-1508672019048-805c876b67e2?w=800&h=400&fit=crop",
+};
+
+export function matchTrainingImage(typ: string, user: string = "vincent"): string {
   const lower = typ.toLowerCase();
-  for (const [key, url] of Object.entries(TRAINING_IMAGES)) {
+  const images = user === "maria" ? TRAINING_IMAGES_MARIA : TRAINING_IMAGES;
+  const fallbackImages = user === "maria" ? TRAINING_IMAGES_MARIA : TRAINING_IMAGES;
+
+  for (const [key, url] of Object.entries(images)) {
     if (lower.includes(key)) return url;
   }
-  if (lower.includes("langhantel") || lower.includes("kh") || lower.includes("trx")) return TRAINING_IMAGES.kraft;
+  if (lower.includes("langhantel") || lower.includes("kh")) return fallbackImages.kraft;
+  if (lower.includes("trx")) return user === "maria" ? TRAINING_IMAGES_MARIA.trx : TRAINING_IMAGES.kraft;
   if (lower.includes("gravel") || lower.includes("bike") || lower.includes("rad")) return TRAINING_IMAGES.radfahren;
   if (lower.includes("rower") || lower.includes("concept")) return TRAINING_IMAGES.rudern;
-  if (lower.includes("urban") || lower.includes("batch")) return TRAINING_IMAGES.mobility;
-  return TRAINING_IMAGES.kraft;
+  if (lower.includes("urban") || lower.includes("batch") || lower.includes("mobil")) return user === "maria" ? TRAINING_IMAGES_MARIA.stretching : TRAINING_IMAGES.mobility;
+  if (lower.includes("sauna")) return TRAINING_IMAGES.sauna;
+  return fallbackImages.kraft;
 }
 
 export const SLEEP_HERO = "https://images.unsplash.com/photo-1495197359483-d092478c170a?w=800&h=300&fit=crop";

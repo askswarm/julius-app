@@ -8,6 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, L
 import { useUser } from "@/lib/UserContext";
 import { getTodayTraining, getRecentTraining, getWeekTrainingCount } from "@/lib/queries";
 import { TRAINING_SCHEDULE, COLORS } from "@/lib/constants";
+import { matchTrainingImage } from "@/lib/images";
 import type { TrainingEntry } from "@/lib/types";
 import FamilySwitcher from "@/components/FamilySwitcher";
 import Card from "@/components/Card";
@@ -149,7 +150,10 @@ export default function TrainingPage() {
           </Card>
 
           {/* Today Hero */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-5 text-white">
+          <div className="rounded-[20px] overflow-hidden relative" style={{ height: 200 }}>
+            <img src={matchTrainingImage(planned)} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 20%, rgba(13,17,23,0.9) 100%)" }} />
+            <div className="relative h-full p-5 flex flex-col justify-end text-white">
             {hasLogged ? (
               <div className="flex flex-col items-center gap-3 py-4">
                 <CheckCircle2 size={48} className="text-emerald-400" />
@@ -172,10 +176,10 @@ export default function TrainingPage() {
                   <span className="px-3 py-1 bg-white/10 rounded-full text-xs">50 Min</span>
                   <span className="px-3 py-1 bg-white/10 rounded-full text-xs">~350 kcal</span>
                 </div>
-                <p className="text-xs text-slate-500 mt-4">Logge via /log im Telegram Bot</p>
+                <p className="text-xs text-white/40 mt-4">Logge via /log im Telegram Bot</p>
               </>
             )}
-          </div>
+          </div></div>
 
           {/* Recent Log */}
           <h3 className="text-sm font-medium text-slate-500">Letzte Trainings</h3>

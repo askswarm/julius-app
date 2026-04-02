@@ -5,6 +5,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Line } fro
 import { useUser } from "@/lib/UserContext";
 import { getTodayScores, getScoreHistory } from "@/lib/queries";
 import { COLORS } from "@/lib/constants";
+import { SLEEP_HERO } from "@/lib/images";
 import type { DailyScore } from "@/lib/types";
 import FamilySwitcher from "@/components/FamilySwitcher";
 import ScoreRing from "@/components/ScoreRing";
@@ -70,8 +71,11 @@ export default function SchlafPage() {
         <FamilySwitcher />
       </div>
 
-      {/* Hero Score */}
-      <Card className="flex flex-col items-center py-6 relative">
+      {/* Hero Score with image */}
+      <div className="rounded-[20px] overflow-hidden relative" style={{ minHeight: 280 }}>
+        <img src={SLEEP_HERO} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0" style={{ background: "rgba(13,17,23,0.7)" }} />
+        <div className="relative flex flex-col items-center py-8">
         <ScoreRing value={today?.sleep ?? null} label="Schlaf-Score" color={COLORS.primary} size={120} />
         <div className="mt-4 flex gap-6 text-center">
           <div>
@@ -91,7 +95,7 @@ export default function SchlafPage() {
             {STATUS_LABELS[today.day_status] || today.day_status}
           </span>
         )}
-      </Card>
+      </div></div>
 
       {/* Trend Chart */}
       <Card>

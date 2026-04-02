@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useUser } from "@/lib/UserContext";
 import { getTodayMeals, getTodayMacros } from "@/lib/queries";
 import type { NutritionEntry, MacroSummary } from "@/lib/types";
+import { matchFoodImage } from "@/lib/images";
 import FamilySwitcher from "@/components/FamilySwitcher";
 import Card from "@/components/Card";
 import MacroBar from "@/components/MacroBar";
@@ -30,14 +31,14 @@ const GRADIENTS = {
 };
 
 function MealCard({ entry }: { entry: NutritionEntry }) {
-  const imgId = FOOD_IMAGES[entry.mahlzeit_typ] || FOOD_IMAGES.default;
+  const imgUrl = matchFoodImage(entry.gericht_name || "");
   const time = entry.created_at ? new Date(entry.created_at).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) : "";
 
   return (
     <Card className="flex gap-4 animate-fade-in">
-      <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0"
+      <div className="w-20 h-20 rounded-[14px] overflow-hidden flex-shrink-0"
         style={{ background: "linear-gradient(135deg, rgba(126,226,184,0.1), rgba(121,192,255,0.1))" }}>
-        <img src={`https://images.unsplash.com/${imgId}?w=200&h=200&fit=crop`} alt="" className="w-full h-full object-cover" loading="lazy"
+        <img src={imgUrl} alt="" className="w-full h-full object-cover" loading="lazy"
           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
       </div>
       <div className="flex-1 min-w-0">

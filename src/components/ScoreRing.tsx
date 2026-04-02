@@ -8,44 +8,33 @@ interface ScoreRingProps {
   size?: number;
 }
 
-export default function ScoreRing({ value, max = 100, label, color, size = 90 }: ScoreRingProps) {
-  const radius = (size - 10) / 2;
-  const circumference = 2 * Math.PI * radius;
+export default function ScoreRing({ value, max = 100, label, color, size = 96 }: ScoreRingProps) {
+  const r = (size - 12) / 2;
+  const circ = 2 * Math.PI * r;
   const pct = value != null ? Math.min(value / max, 1) : 0;
-  const offset = circumference * (1 - pct);
+  const offset = circ * (1 - pct);
+  const id = `glow-${label.replace(/\s/g, "")}`;
 
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="flex flex-col items-center gap-1.5 relative">
       <svg width={size} height={size} className="-rotate-90">
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="currentColor"
-          className="text-slate-100 dark:text-slate-700"
-          strokeWidth={6}
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke={color}
-          strokeWidth={6}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          className="transition-all duration-1000 ease-out"
-        />
+        <defs>
+          <filter id={id}>
+            <feGaussianBlur stdDeviation="4" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth={6} />
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={6}
+          strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset}
+          filter={value != null ? `url(#${id})` : undefined}
+          style={{ transition: "stroke-dashoffset 1.5s ease-out" }} />
       </svg>
-      <span
-        className="absolute text-xl font-semibold"
-        style={{ color: value != null ? color : "#94a3b8", marginTop: size / 2 - 14 }}
-      >
-        {value ?? "--"}
+      <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[36px] font-bold tracking-tight"
+        style={{ color: value != null ? color : "var(--text3)", marginTop: -8 }}>
+        {value ?? "—"}
       </span>
-      <span className="text-xs text-slate-500 mt-1">{label}</span>
+      <span className="text-[11px] font-medium uppercase tracking-[1px]" style={{ color: "var(--text2)" }}>{label}</span>
     </div>
   );
 }

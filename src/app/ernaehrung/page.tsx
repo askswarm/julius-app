@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useUser } from "@/lib/UserContext";
 import { getTodayMeals, getTodayMacros } from "@/lib/queries";
-import { COLORS } from "@/lib/constants";
 import type { NutritionEntry, MacroSummary } from "@/lib/types";
 import FamilySwitcher from "@/components/FamilySwitcher";
 import Card from "@/components/Card";
@@ -13,61 +12,55 @@ const TABS = ["Heute", "Wochenplan", "Einkaufsliste"] as const;
 type Tab = (typeof TABS)[number];
 
 const MEAL_ORDER = ["fruehstueck", "mittagessen", "abendessen", "snack"];
+const MEAL_LABELS: Record<string, string> = { fruehstueck: "Fruehstueck", mittagessen: "Mittagessen", abendessen: "Abendessen", snack: "Snack" };
 
-const MEAL_LABELS: Record<string, string> = {
-  fruehstueck: "Fruehstueck",
-  mittagessen: "Mittagessen",
-  abendessen: "Abendessen",
-  snack: "Snack",
-  shake: "Shake",
-  getraenk: "Getraenk",
+const FOOD_IMAGES: Record<string, string> = {
+  default: "photo-1546069901-ba9599a7e63c",
+  fruehstueck: "photo-1525351484163-7529414344d8",
+  mittagessen: "photo-1512621776951-a57141f2eefd",
+  abendessen: "photo-1467003909585-2f8a72700288",
+  snack: "photo-1502741224143-90386d7f8c82",
+};
+
+const GRADIENTS = {
+  protein: "linear-gradient(90deg, #2EA67A, #7EE2B8)",
+  carbs: "linear-gradient(90deg, #1D4ED8, #79C0FF)",
+  fett: "linear-gradient(90deg, #D97706, #FBBF24)",
+  kcal: "linear-gradient(90deg, #F97316, #FBBF24)",
 };
 
 function MealCard({ entry }: { entry: NutritionEntry }) {
+  const imgId = FOOD_IMAGES[entry.mahlzeit_typ] || FOOD_IMAGES.default;
   const time = entry.created_at ? new Date(entry.created_at).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) : "";
 
   return (
-    <Card className="flex gap-3">
-      <div className="w-16 h-16 rounded-xl bg-slate-100 dark:bg-slate-700 overflow-hidden flex-shrink-0">
-        <img
-          src={`https://source.unsplash.com/200x200/?${encodeURIComponent(entry.gericht_name || "food")},food`}
-          alt=""
-          className="w-full h-full object-cover"
-          loading="lazy"
-        />
+    <Card className="flex gap-4 animate-fade-in">
+      <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0"
+        style={{ background: "linear-gradient(135deg, rgba(126,226,184,0.1), rgba(121,192,255,0.1))" }}>
+        <img src={`https://images.unsplash.com/${imgId}?w=200&h=200&fit=crop`} alt="" className="w-full h-full object-cover" loading="lazy"
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-start">
           <div>
-            <p className="text-sm font-medium truncate">{entry.gericht_name}</p>
-            <p className="text-xs text-slate-500">{MEAL_LABELS[entry.mahlzeit_typ] || entry.mahlzeit_typ} · {time}</p>
+            <p className="text-sm font-semibold truncate">{entry.gericht_name}</p>
+            <p className="text-xs mt-0.5" style={{ color: "var(--text3)" }}>{MEAL_LABELS[entry.mahlzeit_typ] || entry.mahlzeit_typ} · {time}</p>
           </div>
-          <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
-            {entry.kalorien || 0} kcal
-          </span>
+          <span className="text-xs font-semibold" style={{ color: "var(--accent)" }}>{entry.kalorien || 0} kcal</span>
         </div>
-        <div className="flex gap-3 mt-1.5">
-          <span className="text-[10px] px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950 text-emerald-600 rounded-full">
-            {entry.protein_g || 0}g P
-          </span>
-          <span className="text-[10px] px-2 py-0.5 bg-blue-50 dark:bg-blue-950 text-blue-600 rounded-full">
-            {entry.kohlenhydrate_g || 0}g KH
-          </span>
-          <span className="text-[10px] px-2 py-0.5 bg-amber-50 dark:bg-amber-950 text-amber-600 rounded-full">
-            {entry.fett_g || 0}g F
-          </span>
+        <div className="flex gap-2 mt-2">
+          {[
+            { v: entry.protein_g, l: "P", c: "rgba(126,226,184,0.12)", t: "var(--accent)" },
+            { v: entry.kohlenhydrate_g, l: "KH", c: "rgba(121,192,255,0.12)", t: "var(--accent2)" },
+            { v: entry.fett_g, l: "F", c: "rgba(249,115,22,0.12)", t: "var(--orange)" },
+          ].map((m) => (
+            <span key={m.l} className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: m.c, color: m.t }}>
+              {m.v || 0}g {m.l}
+            </span>
+          ))}
         </div>
       </div>
     </Card>
-  );
-}
-
-function EmptyMealSlot({ label }: { label: string }) {
-  return (
-    <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-center">
-      <p className="text-sm text-slate-400">{label}</p>
-      <p className="text-xs text-slate-300 mt-1">Foto senden oder /meal im Bot</p>
-    </div>
   );
 }
 
@@ -83,33 +76,24 @@ export default function ErnaehrungPage() {
   }, [user.id]);
 
   const mealsByType: Record<string, NutritionEntry[]> = {};
-  meals.forEach((m) => {
-    const t = m.mahlzeit_typ || "snack";
-    (mealsByType[t] ||= []).push(m);
-  });
+  meals.forEach((m) => { const t = m.mahlzeit_typ || "snack"; (mealsByType[t] ||= []).push(m); });
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Ernaehrung</h1>
+      <div className="flex items-center justify-between animate-fade-in">
+        <h1 className="text-xl font-bold">Ernaehrung</h1>
         <FamilySwitcher />
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 gap-1">
+      <div className="flex rounded-xl p-1 gap-1" style={{ background: "rgba(255,255,255,0.04)" }}>
         {TABS.map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`flex-1 py-2 text-sm rounded-lg font-medium transition-colors ${
-              tab === t
-                ? "bg-white dark:bg-slate-700 text-blue-600 shadow-sm"
-                : "text-slate-500"
-            }`}
-          >
-            {t}
-          </button>
+          <button key={t} onClick={() => setTab(t)}
+            className="flex-1 py-2 text-sm rounded-lg font-medium transition-all"
+            style={{
+              background: tab === t ? "rgba(126,226,184,0.1)" : "transparent",
+              color: tab === t ? "var(--accent)" : "var(--text3)",
+            }}>{t}</button>
         ))}
       </div>
 
@@ -117,44 +101,33 @@ export default function ErnaehrungPage() {
         <div className="flex flex-col gap-3">
           {MEAL_ORDER.map((type) => {
             const entries = mealsByType[type];
-            if (entries && entries.length > 0) {
-              return entries.map((e) => <MealCard key={e.id} entry={e} />);
-            }
-            if (type !== "snack") {
-              return <EmptyMealSlot key={type} label={MEAL_LABELS[type] || type} />;
-            }
+            if (entries?.length) return entries.map((e) => <MealCard key={e.id} entry={e} />);
+            if (type !== "snack") return (
+              <div key={type} className="rounded-[20px] p-5 text-center" style={{ border: "2px dashed var(--card-border)" }}>
+                <p className="text-sm" style={{ color: "var(--text3)" }}>{MEAL_LABELS[type]}</p>
+                <p className="text-xs mt-1" style={{ color: "var(--text3)" }}>Foto senden oder /meal im Bot</p>
+              </div>
+            );
             return null;
           })}
 
-          {/* Tages-Zusammenfassung */}
-          <Card>
-            <h3 className="text-sm font-medium mb-3">Tagesbilanz</h3>
-            <div className="flex flex-col gap-2">
-              <MacroBar label="Protein" current={macros.protein_g} target={user.protein_ziel_g} color={COLORS.green} />
-              <MacroBar label="Carbs" current={macros.carbs_g} target={200} color={COLORS.primary} />
-              <MacroBar label="Fett" current={macros.fett_g} target={80} color={COLORS.amber} />
-              <MacroBar label="kcal" current={macros.kcal} target={user.kcal_training} color={COLORS.orange} unit="" />
+          <Card className="animate-fade-in stagger-4">
+            <span className="text-[11px] font-semibold uppercase tracking-[1px] block mb-3" style={{ color: "var(--text2)" }}>Tagesbilanz</span>
+            <div className="flex flex-col gap-2.5">
+              <MacroBar label="Protein" current={macros.protein_g} target={user.protein_ziel_g} gradient={GRADIENTS.protein} />
+              <MacroBar label="Carbs" current={macros.carbs_g} target={200} gradient={GRADIENTS.carbs} />
+              <MacroBar label="Fett" current={macros.fett_g} target={80} gradient={GRADIENTS.fett} />
+              <MacroBar label="kcal" current={macros.kcal} target={user.kcal_training} gradient={GRADIENTS.kcal} unit="" />
             </div>
           </Card>
         </div>
       )}
 
       {tab === "Wochenplan" && (
-        <Card>
-          <p className="text-sm text-slate-500 text-center py-8">
-            Wochenplan wird vom Julius Bot generiert.<br />
-            Schreib /wochenplan im Telegram Chat.
-          </p>
-        </Card>
+        <Card><p className="text-sm text-center py-8" style={{ color: "var(--text3)" }}>Wochenplan wird vom Julius Bot generiert.</p></Card>
       )}
-
       {tab === "Einkaufsliste" && (
-        <Card>
-          <p className="text-sm text-slate-500 text-center py-8">
-            Einkaufsliste wird aus Wochenplan + Vorrat generiert.<br />
-            Schreib /einkauf im Telegram Chat.
-          </p>
-        </Card>
+        <Card><p className="text-sm text-center py-8" style={{ color: "var(--text3)" }}>Einkaufsliste via /einkauf im Telegram Bot.</p></Card>
       )}
     </div>
   );

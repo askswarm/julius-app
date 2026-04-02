@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Utensils, Dumbbell, Moon, Pill, User } from "lucide-react";
+import { Home, UtensilsCrossed, Dumbbell, Moon, Pill, User } from "lucide-react";
 
 const tabs = [
   { href: "/", icon: Home, label: "Home" },
-  { href: "/ernaehrung", icon: Utensils, label: "Essen" },
+  { href: "/ernaehrung", icon: UtensilsCrossed, label: "Essen" },
   { href: "/training", icon: Dumbbell, label: "Training" },
   { href: "/schlaf", icon: Moon, label: "Schlaf" },
   { href: "/supplements", icon: Pill, label: "Supps" },
@@ -14,25 +14,21 @@ const tabs = [
 ];
 
 export default function BottomNav() {
-  const pathname = usePathname();
-
+  const path = usePathname();
   return (
     <>
-      {/* Mobile Bottom Nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 md:hidden">
-        <div className="flex justify-around py-2">
-          {tabs.map((tab) => {
-            const active = pathname === tab.href;
+      {/* Mobile */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
+        style={{ background: "rgba(13,17,23,0.85)", backdropFilter: "blur(20px)", borderTop: "1px solid var(--card-border)" }}>
+        <div className="flex justify-around py-2.5">
+          {tabs.map((t) => {
+            const active = path === t.href;
             return (
-              <Link
-                key={tab.href}
-                href={tab.href}
-                className={`flex flex-col items-center gap-0.5 px-2 py-1 text-xs ${
-                  active ? "text-blue-500" : "text-slate-400"
-                }`}
-              >
-                <tab.icon size={20} />
-                <span>{tab.label}</span>
+              <Link key={t.href} href={t.href}
+                className="flex flex-col items-center gap-0.5 px-2 py-0.5 relative">
+                {active && <div className="absolute -top-1 w-1 h-1 rounded-full" style={{ background: "var(--accent)" }} />}
+                <t.icon size={20} style={{ color: active ? "var(--accent)" : "var(--text3)" }} />
+                <span className="text-[10px] font-medium" style={{ color: active ? "var(--accent)" : "var(--text3)" }}>{t.label}</span>
               </Link>
             );
           })}
@@ -40,21 +36,21 @@ export default function BottomNav() {
       </nav>
 
       {/* Desktop Sidebar */}
-      <nav className="hidden md:flex md:fixed md:left-0 md:top-0 md:h-full md:w-20 md:flex-col md:items-center md:gap-2 md:py-6 md:bg-white md:dark:bg-slate-900 md:border-r md:border-slate-200 md:dark:border-slate-700 md:z-50">
-        {tabs.map((tab) => {
-          const active = pathname === tab.href;
+      <nav className="hidden md:flex md:fixed md:left-0 md:top-0 md:h-full md:w-[72px] md:flex-col md:items-center md:gap-1 md:py-6 md:z-50"
+        style={{ background: "rgba(13,17,23,0.9)", backdropFilter: "blur(20px)", borderRight: "1px solid var(--card-border)" }}>
+        <div className="w-10 h-10 rounded-xl mb-6 flex items-center justify-center text-lg font-bold"
+          style={{ background: "var(--grad-teal)", color: "#0D1117" }}>J</div>
+        {tabs.map((t) => {
+          const active = path === t.href;
           return (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl text-xs ${
-                active
-                  ? "text-blue-500 bg-blue-50 dark:bg-blue-950"
-                  : "text-slate-400 hover:text-slate-600"
-              }`}
-            >
-              <tab.icon size={22} />
-              <span>{tab.label}</span>
+            <Link key={t.href} href={t.href}
+              className="flex flex-col items-center gap-1 w-14 py-2.5 rounded-xl transition-all relative"
+              style={{
+                background: active ? "rgba(126,226,184,0.08)" : "transparent",
+                borderLeft: active ? "2px solid var(--accent)" : "2px solid transparent",
+              }}>
+              <t.icon size={20} style={{ color: active ? "var(--accent)" : "var(--text3)" }} />
+              <span className="text-[9px] font-medium" style={{ color: active ? "var(--accent)" : "var(--text3)" }}>{t.label}</span>
             </Link>
           );
         })}

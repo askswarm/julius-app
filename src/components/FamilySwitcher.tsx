@@ -4,19 +4,15 @@ import { useUser } from "@/lib/UserContext";
 
 export default function FamilySwitcher() {
   const { userKey, setUserKey } = useUser();
-
   return (
-    <div className="flex bg-slate-100 dark:bg-slate-800 rounded-full p-1">
+    <div className="flex rounded-full p-1" style={{ background: "rgba(255,255,255,0.04)" }}>
       {(["vincent", "maria"] as const).map((key) => (
-        <button
-          key={key}
-          onClick={() => setUserKey(key)}
-          className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-            userKey === key
-              ? "bg-white dark:bg-slate-700 text-blue-600 shadow-sm"
-              : "text-slate-500 hover:text-slate-700"
-          }`}
-        >
+        <button key={key} onClick={() => setUserKey(key)}
+          className="px-5 py-1.5 rounded-full text-sm font-medium transition-all duration-200"
+          style={{
+            background: userKey === key ? "var(--grad-teal)" : "transparent",
+            color: userKey === key ? "#0D1117" : "var(--text3)",
+          }}>
           {key === "vincent" ? "Vincent" : "Maria"}
         </button>
       ))}

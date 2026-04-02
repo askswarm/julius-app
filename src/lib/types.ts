@@ -14,6 +14,7 @@ export interface UserProfile {
 }
 
 export interface DailyScore {
+  datum?: string;
   readiness: number | null;
   sleep: number | null;
   day_status: string;

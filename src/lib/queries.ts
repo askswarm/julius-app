@@ -12,6 +12,12 @@ function mondayOfWeek(): string {
   return new Date(d.setDate(diff)).toISOString().split("T")[0];
 }
 
+function daysAgo(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().split("T")[0];
+}
+
 export async function getTodayScores(chatId: number): Promise<DailyScore | null> {
   const { data } = await supabase
     .from("daily_scores")
@@ -67,6 +73,16 @@ export async function getTodayTraining(chatId: number): Promise<TrainingEntry[]>
   return data || [];
 }
 
+export async function getRecentTraining(chatId: number, days: number = 14): Promise<TrainingEntry[]> {
+  const { data } = await supabase
+    .from("training_log")
+    .select("*")
+    .eq("chat_id", chatId)
+    .gte("datum", daysAgo(days))
+    .order("datum", { ascending: false });
+  return data || [];
+}
+
 export async function getTodaySupplements(chatId: number): Promise<string[]> {
   const { data } = await supabase
     .from("supplement_log")
@@ -77,13 +93,11 @@ export async function getTodaySupplements(chatId: number): Promise<string[]> {
 }
 
 export async function getTrainingLoad(chatId: number): Promise<number> {
-  const since = new Date();
-  since.setDate(since.getDate() - 2);
   const { data } = await supabase
     .from("training_log")
     .select("rpe, dauer_min")
     .eq("chat_id", chatId)
-    .gte("datum", since.toISOString().split("T")[0]);
+    .gte("datum", daysAgo(2));
   return (data || []).reduce((s, r) => s + (r.rpe || 5) * (r.dauer_min || 45), 0);
 }
 
@@ -96,4 +110,26 @@ export async function getWeekMeals(chatId: number): Promise<NutritionEntry[]> {
     .order("datum")
     .order("created_at");
   return data || [];
+}
+
+export async function getScoreHistory(chatId: number, days: number = 14): Promise<DailyScore[]> {
+  const { data } = await supabase
+    .from("daily_scores")
+    .select("datum, readiness, sleep, day_status")
+    .eq("chat_id", chatId)
+    .gte("datum", daysAgo(days))
+    .order("datum");
+  return (data || []) as DailyScore[];
+}
+
+export async function getWeekTrainingCount(chatId: number): Promise<{total: number; byType: Record<string, number>}> {
+  const { data } = await supabase
+    .from("training_log")
+    .select("typ")
+    .eq("chat_id", chatId)
+    .gte("datum", mondayOfWeek());
+  const rows = data || [];
+  const byType: Record<string, number> = {};
+  rows.forEach((r) => { byType[r.typ] = (byType[r.typ] || 0) + 1; });
+  return { total: rows.length, byType };
 }

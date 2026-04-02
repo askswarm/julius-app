@@ -122,6 +122,19 @@ export async function getScoreHistory(chatId: number, days: number = 14): Promis
   return (data || []) as DailyScore[];
 }
 
+export async function getLatestBloodwork(chatId: number): Promise<Record<string, { wert: number; datum: string }>> {
+  const { data } = await supabase
+    .from("bloodwork")
+    .select("marker, wert, datum")
+    .eq("chat_id", chatId)
+    .order("datum", { ascending: false });
+  const latest: Record<string, { wert: number; datum: string }> = {};
+  (data || []).forEach((r) => {
+    if (!latest[r.marker]) latest[r.marker] = { wert: r.wert, datum: r.datum };
+  });
+  return latest;
+}
+
 export async function getWeekTrainingCount(chatId: number): Promise<{total: number; byType: Record<string, number>}> {
   const { data } = await supabase
     .from("training_log")

@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, Mic, MicOff, Send, ArrowLeft } from "lucide-react";
+import { Camera, Send, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useUser } from "@/lib/UserContext";
+import VoiceRecorder from "@/components/VoiceRecorder";
 
 interface Message {
   id: string;
@@ -18,12 +19,10 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [recording, setRecording] = useState(false);
   const [pendingImage, setPendingImage] = useState<string | null>(null);
+  const [voiceError, setVoiceError] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const mediaRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -59,14 +58,15 @@ export default function ChatPage() {
 
       const data = await res.json();
 
-      const botMsg: Message = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content: data.response || data.error || "Fehler bei der Antwort",
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, botMsg]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: data.response || data.error || "Fehler bei der Antwort",
+          timestamp: new Date(),
+        },
+      ]);
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -86,51 +86,13 @@ export default function ChatPage() {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result as string;
-      setPendingImage(base64);
-    };
+    reader.onload = () => setPendingImage(reader.result as string);
     reader.readAsDataURL(file);
     e.target.value = "";
   }
 
-  async function toggleRecording() {
-    if (recording) {
-      mediaRef.current?.stop();
-      setRecording(false);
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      chunksRef.current = [];
-
-      recorder.ondataavailable = (e) => chunksRef.current.push(e.data);
-      recorder.onstop = async () => {
-        stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-
-        const formData = new FormData();
-        formData.append("audio", blob);
-
-        try {
-          const res = await fetch("/api/transcribe", { method: "POST", body: formData });
-          const data = await res.json();
-          if (data.text) {
-            setInput(data.text);
-          }
-        } catch {
-          // Whisper not available
-        }
-      };
-
-      recorder.start();
-      mediaRef.current = recorder;
-      setRecording(true);
-    } catch {
-      // Microphone not available
-    }
+  function handleVoiceTranscript(text: string) {
+    sendMessage(text);
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -213,12 +175,19 @@ export default function ChatPage() {
         )}
       </div>
 
+      {/* Voice error toast */}
+      {voiceError && (
+        <div className="px-4 md:px-6 py-2" style={{ background: "rgba(239,68,68,0.1)" }}>
+          <p className="text-xs" style={{ color: "#EF4444" }}>{voiceError}</p>
+        </div>
+      )}
+
       {/* Pending image preview */}
       {pendingImage && (
         <div className="px-4 md:px-6 py-2" style={{ background: "#161B22", borderTop: "1px solid var(--card-border)" }}>
           <div className="relative inline-block">
             <img src={pendingImage} alt="" className="h-16 rounded-lg object-cover" />
-            <button onClick={() => setPendingImage(null)}
+            <button type="button" onClick={() => setPendingImage(null)}
               className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center">
               x
             </button>
@@ -226,7 +195,7 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* Input — no backdropFilter (breaks touch on Safari) */}
+      {/* Input */}
       <div className="px-3 md:px-6 pt-3 flex items-end gap-2" style={{ background: "#161B22", borderTop: "1px solid var(--card-border)", paddingBottom: "max(12px, env(safe-area-inset-bottom))", position: "relative", zIndex: 10 }}>
         <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFileChange} />
 
@@ -246,16 +215,16 @@ export default function ChatPage() {
           />
         </div>
 
-        <button type="button" onClick={toggleRecording}
-          className="p-2.5 rounded-full transition-colors flex-shrink-0"
-          style={{ color: recording ? "#EF4444" : "var(--text2)" }}>
-          {recording ? <MicOff size={22} /> : <Mic size={22} />}
-        </button>
-
-        {(input.trim() || pendingImage) && (
+        {/* Voice Recorder or Send Button */}
+        {input.trim() || pendingImage ? (
           <button type="button" onClick={() => sendMessage()} className="p-2.5 rounded-full flex-shrink-0" style={{ background: "var(--grad-teal)" }}>
             <Send size={18} style={{ color: "#0D1117" }} />
           </button>
+        ) : (
+          <VoiceRecorder
+            onTranscript={handleVoiceTranscript}
+            onError={(msg) => { setVoiceError(msg); setTimeout(() => setVoiceError(""), 3000); }}
+          />
         )}
       </div>
     </div>

@@ -10,6 +10,7 @@ import Card from "@/components/Card";
 import ScoreRing from "@/components/ScoreRing";
 import Toast from "@/components/Toast";
 import SupplementAdvisor from "@/components/SupplementAdvisor";
+import AdaptationsCard from "@/components/AdaptationsCard";
 
 const TABS = ["Tagesplan", "Mein Stack", "Blutwerte"] as const;
 type Tab = (typeof TABS)[number];
@@ -171,6 +172,9 @@ export default function SupplementsPage() {
               </div>
             )}
           </Card>
+
+          {/* Adaptations */}
+          <AdaptationsCard />
 
           {/* Supplement Advisor */}
           <SupplementAdvisor />

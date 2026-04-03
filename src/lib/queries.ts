@@ -135,6 +135,28 @@ export async function getLatestBloodwork(chatId: number): Promise<Record<string,
   return latest;
 }
 
+export async function getRecentAdaptations(chatId: number, days: number = 7): Promise<{ datum: string; trigger: string; category: string; description: string }[]> {
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+  const { data } = await supabase
+    .from("adaptations_log")
+    .select("datum, trigger, category, description")
+    .eq("chat_id", chatId)
+    .gte("datum", since.toISOString().split("T")[0])
+    .order("created_at", { ascending: false })
+    .limit(5);
+  return data || [];
+}
+
+export async function getActiveSymptoms(chatId: number): Promise<{ symptom: string; severity: string; started_at: string }[]> {
+  const { data } = await supabase
+    .from("health_status")
+    .select("symptom, severity, started_at")
+    .eq("chat_id", chatId)
+    .eq("active", true);
+  return data || [];
+}
+
 export async function getTodayMacroAdjustment(chatId: number): Promise<{ kcal: number; protein: number }> {
   const { data } = await supabase
     .from("macro_adjustments")

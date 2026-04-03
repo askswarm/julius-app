@@ -8,7 +8,7 @@ import { calculateMacroAdjustment } from "@/lib/macroAdjustment";
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 interface LogAction {
-  type: "meal" | "training" | "water" | "supplement";
+  type: "meal" | "training" | "water" | "supplement" | "supplement_missed" | "adaptation" | "symptom";
   meal_type?: string;
   name?: string;
   kalorien?: number;
@@ -21,6 +21,12 @@ interface LogAction {
   menge_ml?: number;
   zeitpunkt?: string;
   items?: string[];
+  trigger?: string;
+  category?: string;
+  description?: string;
+  symptom?: string;
+  severity?: string;
+  resolved?: boolean;
 }
 
 async function executeLogActions(actions: LogAction[], chatId: number) {
@@ -79,6 +85,43 @@ async function executeLogActions(actions: LogAction[], chatId: number) {
               { chat_id: chatId, datum, zeitpunkt: action.zeitpunkt },
               { onConflict: "chat_id,datum,zeitpunkt" }
             );
+          }
+          break;
+
+        case "supplement_missed":
+          if (action.zeitpunkt) {
+            await supabaseServer.from("supplement_log").upsert(
+              { chat_id: chatId, datum, zeitpunkt: action.zeitpunkt, eingenommen: false },
+              { onConflict: "chat_id,datum,zeitpunkt" }
+            );
+          }
+          break;
+
+        case "adaptation":
+          await supabaseServer.from("adaptations_log").insert({
+            chat_id: chatId,
+            datum,
+            trigger: action.trigger || "chat",
+            category: action.category || "supplements",
+            description: action.description || "",
+          });
+          break;
+
+        case "symptom":
+          if (action.resolved) {
+            await supabaseServer.from("health_status")
+              .update({ active: false, resolved_at: datum })
+              .eq("chat_id", chatId)
+              .eq("active", true)
+              .ilike("symptom", `%${action.symptom || ""}%`);
+          } else {
+            await supabaseServer.from("health_status").insert({
+              chat_id: chatId,
+              symptom: action.symptom || "Unbekannt",
+              severity: action.severity || "mild",
+              active: true,
+              started_at: datum,
+            });
           }
           break;
       }

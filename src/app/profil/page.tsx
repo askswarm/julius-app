@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Syringe, Save, ChevronRight, Settings, BarChart3, Target } from "lucide-react";
+import { Syringe, Save, ChevronRight, Settings, BarChart3, Target, Moon, Sun, BookOpen, Download, HelpCircle } from "lucide-react";
 import { differenceInYears } from "date-fns";
 import Link from "next/link";
 import { useUser } from "@/lib/UserContext";
@@ -10,12 +10,14 @@ import { getProfileImage } from "@/lib/images";
 import Card from "@/components/Card";
 import FamilySwitcher from "@/components/FamilySwitcher";
 import Toast from "@/components/Toast";
+import { useTheme } from "@/lib/ThemeContext";
 
 const GOAL_OPTIONS = ["Longevity", "Muskelaufbau", "VO2max", "HYROX", "Muskelerhalt", "Recomp", "Gewichtsverlust"];
 
 export default function ProfilPage() {
   const { user, userKey } = useUser();
   const isVincent = userKey === "vincent";
+  const { theme, toggleTheme } = useTheme();
   const [toast, setToast] = useState("");
 
   const [name, setName] = useState(user.name);
@@ -127,30 +129,51 @@ export default function ProfilPage() {
       )}
 
       {/* Menu Links */}
-      <Card>
-        <button onClick={() => setEditing(!editing)} className="flex items-center justify-between w-full py-2.5">
-          <div className="flex items-center gap-3">
-            <Save size={18} style={{ color: "var(--text3)" }} />
-            <span className="text-sm" style={{ color: "var(--text)" }}>Daten bearbeiten</span>
-          </div>
-          <ChevronRight size={16} style={{ color: "var(--text3)", transform: editing ? "rotate(90deg)" : "none", transition: "transform 0.2s" }} />
-        </button>
+      <Card className="!px-0 !py-0 overflow-hidden">
+        {[
+          { icon: Save, label: "Daten bearbeiten", action: () => setEditing(!editing), chevron: true },
+          { icon: BarChart3, label: "Wochen-Report", href: "/report" },
+          { icon: BookOpen, label: "Tages-Journal", href: "/journal" },
+          { icon: Settings, label: "Einstellungen", href: "/einstellungen" },
+          { icon: Download, label: "Daten exportieren", action: () => {
+            const d = { user: userKey, exportedAt: new Date().toISOString() };
+            const b = new Blob([JSON.stringify(d, null, 2)], { type: "application/json" });
+            const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = `julius-export.json`; a.click(); URL.revokeObjectURL(u);
+            setToast("Export gestartet");
+          }},
+          { icon: HelpCircle, label: "Hilfe & Feedback", action: () => setToast("julius@busch.family") },
+        ].map((item, i) => {
+          const content = (
+            <div className="flex items-center justify-between px-6 py-3.5 transition-colors"
+              style={{ borderBottom: i < 5 ? "1px solid var(--card-border)" : "none" }}>
+              <div className="flex items-center gap-3">
+                <item.icon size={18} style={{ color: "var(--text3)" }} />
+                <span className="text-sm" style={{ color: "var(--text)" }}>{item.label}</span>
+              </div>
+              <ChevronRight size={16} style={{ color: "var(--text3)" }} />
+            </div>
+          );
+          if (item.href) return <Link key={item.label} href={item.href}>{content}</Link>;
+          return <button key={item.label} onClick={item.action} className="w-full text-left">{content}</button>;
+        })}
 
-        <Link href="/report" className="flex items-center justify-between w-full py-2.5">
+        {/* Dark Mode Toggle inline */}
+        <div className="flex items-center justify-between px-6 py-3.5" style={{ borderBottom: "1px solid var(--card-border)" }}>
           <div className="flex items-center gap-3">
-            <BarChart3 size={18} style={{ color: "var(--text3)" }} />
-            <span className="text-sm" style={{ color: "var(--text)" }}>Wochen-Report</span>
+            {theme === "dark" ? <Moon size={18} style={{ color: "var(--text3)" }} /> : <Sun size={18} style={{ color: "var(--text3)" }} />}
+            <span className="text-sm" style={{ color: "var(--text)" }}>Dark Mode</span>
           </div>
-          <ChevronRight size={16} style={{ color: "var(--text3)" }} />
-        </Link>
+          <button onClick={toggleTheme}
+            className={`w-11 h-6 rounded-full transition-colors ${theme === "dark" ? "bg-emerald-500" : "bg-slate-400"}`}>
+            <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${theme === "dark" ? "translate-x-5" : "translate-x-0.5"}`} />
+          </button>
+        </div>
 
-        <Link href="/einstellungen" className="flex items-center justify-between w-full py-2.5">
-          <div className="flex items-center gap-3">
-            <Settings size={18} style={{ color: "var(--text3)" }} />
-            <span className="text-sm" style={{ color: "var(--text)" }}>Einstellungen</span>
-          </div>
-          <ChevronRight size={16} style={{ color: "var(--text3)" }} />
-        </Link>
+        {/* Version */}
+        <div className="flex items-center justify-between px-6 py-3.5">
+          <span className="text-sm" style={{ color: "var(--text3)" }}>Version</span>
+          <span className="text-xs" style={{ color: "var(--text3)" }}>Julius v1.0</span>
+        </div>
       </Card>
 
       {/* Edit Form (collapsible) */}

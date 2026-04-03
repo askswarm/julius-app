@@ -6,6 +6,41 @@ import { buildSystemPrompt } from "@/lib/prompts";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const chatId = searchParams.get("chatId");
+  const offset = parseInt(searchParams.get("offset") || "0");
+  const limit = parseInt(searchParams.get("limit") || "50");
+
+  if (!chatId) {
+    return NextResponse.json({ error: "chatId required" }, { status: 400 });
+  }
+
+  // Count total
+  const { count } = await supabaseServer
+    .from("conversations")
+    .select("id", { count: "exact", head: true })
+    .eq("chat_id", chatId);
+
+  // Fetch page (newest first for offset, then reverse for display order)
+  const { data, error } = await supabaseServer
+    .from("conversations")
+    .select("id, role, content, created_at")
+    .eq("chat_id", chatId)
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({
+    messages: (data || []).reverse(),
+    total: count || 0,
+    hasMore: (count || 0) > offset + limit,
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { message, chatId, image } = await req.json();
@@ -13,7 +48,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "message or image required" }, { status: 400 });
     }
 
-    // Resolve user
     const userKey = Object.entries(USERS).find(([, u]) => u.id === chatId)?.[0] || "vincent";
     const user = USERS[userKey];
 
@@ -46,7 +80,6 @@ export async function POST(req: NextRequest) {
 
     messages.push({ role: "user", content });
 
-    // Call Claude
     const response = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 1024,
@@ -59,14 +92,14 @@ export async function POST(req: NextRequest) {
       .map((b) => b.text)
       .join("");
 
-    // Save to conversations
+    // Save both messages
     const userContent = message || "[Foto]";
-    await supabaseServer.from("conversations").insert([
+    const { data: inserted } = await supabaseServer.from("conversations").insert([
       { chat_id: chatId, role: "user", content: userContent },
       { chat_id: chatId, role: "assistant", content: assistantText },
-    ]);
+    ]).select("id, role, content, created_at");
 
-    return NextResponse.json({ response: assistantText });
+    return NextResponse.json({ response: assistantText, saved: inserted });
   } catch (error: unknown) {
     console.error("Chat API error:", error);
     const msg = error instanceof Error ? error.message : "Internal error";

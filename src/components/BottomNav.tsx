@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, UtensilsCrossed, Dumbbell, Moon, Pill, BookOpen } from "lucide-react";
+import { Home, UtensilsCrossed, Dumbbell, Moon, Pill, Settings } from "lucide-react";
 
 const tabs = [
   { href: "/", icon: Home, label: "Home" },
@@ -10,7 +10,7 @@ const tabs = [
   { href: "/training", icon: Dumbbell, label: "Training" },
   { href: "/schlaf", icon: Moon, label: "Schlaf" },
   { href: "/supplements", icon: Pill, label: "Supps" },
-  { href: "/journal", icon: BookOpen, label: "Journal" },
+  { href: "/einstellungen", icon: Settings, label: "Settings" },
 ];
 
 export default function BottomNav() {

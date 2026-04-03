@@ -139,6 +139,7 @@ export default function HomePage() {
               { label: "Puls", value: oura.lowest_hr || oura.resting_hr || null, unit: "bpm", trend: trendVal(oura.lowest_hr, yesterday?.lowest_hr), trendInvert: true },
               { label: "Schritte", value: oura.steps || null, unit: "", trend: null, trendInvert: false },
               { label: "Active", value: oura.active_calories || null, unit: "kcal", trend: null, trendInvert: false },
+              { label: "Stress", value: oura.stress_score || null, unit: "", trend: null, trendInvert: false },
             ].filter((m) => m.value != null).map((m, i, arr) => (
               <div key={m.label} className="flex-1 text-center py-3 px-1"
                 style={{ borderRight: i < arr.length - 1 ? "1px solid var(--card-border)" : "none" }}>

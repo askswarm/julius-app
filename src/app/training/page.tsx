@@ -186,6 +186,9 @@ export default function TrainingPage() {
   const [savedTyp, setSavedTyp] = useState("");
   const [savedRpe, setSavedRpe] = useState(6);
   const [analyzingPhoto, setAnalyzingPhoto] = useState(false);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [timerSeconds, setTimerSeconds] = useState(0);
+  const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [showSessionAnim, setShowSessionAnim] = useState(false);
   const [sessionAnimSport, setSessionAnimSport] = useState("");
   const [sessionAnimImage, setSessionAnimImage] = useState("");
@@ -285,6 +288,21 @@ export default function TrainingPage() {
     reader.readAsDataURL(file);
   }
 
+  function startTimer() {
+    if (timerRunning) return;
+    setTimerRunning(true);
+    timerIntervalRef.current = setInterval(() => setTimerSeconds((s) => s + 1), 1000);
+  }
+  function pauseTimer() {
+    setTimerRunning(false);
+    if (timerIntervalRef.current) { clearInterval(timerIntervalRef.current); timerIntervalRef.current = null; }
+  }
+  function stopTimer() {
+    pauseTimer();
+    if (timerSeconds > 0) setLogDauer(Math.round(timerSeconds / 60));
+    setTimerSeconds(0);
+  }
+
   // Chart data
   const weeklyData: Record<string, Record<string, number>> = {};
   recent.forEach((t) => {
@@ -326,20 +344,28 @@ export default function TrainingPage() {
 
       {tab === "Uebersicht" && (
         <div className="flex flex-col gap-4">
+          {/* Training Hero */}
+          <div className="rounded-[20px] overflow-hidden relative" style={{ height: 160 }}>
+            <img src={matchTrainingImage(planned, userKey)} alt="" className="absolute inset-0 w-full h-full object-cover ken-burns" />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 20%, rgba(0,0,0,0.8) 100%)" }} />
+            <div className="relative h-full p-5 flex flex-col justify-end">
+              <p className="text-[10px] text-white/60 uppercase tracking-wider">Heute geplant</p>
+              <p className="text-lg font-bold text-white">{planned}</p>
+            </div>
+          </div>
+
           <Card>
             <WeekCalendar trainings={recent} />
           </Card>
 
-          {/* Start Training Button */}
-          {!hasLogged && (
-            <button
-              onClick={() => setShowPicker(true)}
-              className="flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-semibold transition-all glow-pulse"
-              style={{ background: "var(--grad-teal)", color: "#0D1117" }}
-            >
-              <Plus size={20} /> Training starten
-            </button>
-          )}
+          {/* Start Training Button — always visible */}
+          <button
+            onClick={() => setShowPicker(true)}
+            className="flex items-center justify-center gap-3 rounded-2xl text-lg font-bold transition-all glow-pulse active:scale-95"
+            style={{ background: "var(--grad-teal)", color: "#0D1117", height: 56 }}
+          >
+            <Plus size={22} /> Training starten
+          </button>
 
           {/* Post-Workout Card */}
           {showPostWorkout && <PostWorkoutCard typ={savedTyp} rpe={savedRpe} />}
@@ -495,14 +521,14 @@ export default function TrainingPage() {
                         setShowSessionAnim(true);
                         setTimeout(() => { setShowSessionAnim(false); setShowLog(true); }, 2500);
                       }}
-                      className="relative rounded-2xl overflow-hidden text-left transition-transform hover:scale-[1.02]"
-                      style={{ height: 160 }}
+                      className="relative rounded-2xl overflow-hidden text-left transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                      style={{ height: 180 }}
                     >
                       <img src={imgUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
                       <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.75))" }} />
                       <div className="relative h-full p-4 flex flex-col justify-between">
-                        <sport.icon size={22} className="text-white/80" />
-                        <p className="text-white font-semibold text-sm">{sport.name}</p>
+                        <sport.icon size={24} className="text-white/80" />
+                        <p className="text-white font-bold text-base">{sport.name}</p>
                       </div>
                     </button>
                   );
@@ -534,6 +560,40 @@ export default function TrainingPage() {
               {analyzingPhoto ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
               {analyzingPhoto ? "Analysiere Foto..." : "Workout-Foto analysieren"}
             </button>
+
+            {/* Timer */}
+            <Card className="mb-3">
+              <div className="flex flex-col items-center gap-3">
+                <p className="text-4xl font-bold font-mono" style={{ color: "var(--text)" }}>
+                  {String(Math.floor(timerSeconds / 60)).padStart(2, "0")}:{String(timerSeconds % 60).padStart(2, "0")}
+                </p>
+                <div className="flex gap-3">
+                  {!timerRunning ? (
+                    <button type="button" onClick={startTimer}
+                      className="w-14 h-14 rounded-full flex items-center justify-center"
+                      style={{ background: "var(--grad-teal)" }}>
+                      <span className="text-xl" style={{ color: "#0D1117", marginLeft: 2 }}>&#9654;</span>
+                    </button>
+                  ) : (
+                    <button type="button" onClick={pauseTimer}
+                      className="w-14 h-14 rounded-full flex items-center justify-center"
+                      style={{ background: "var(--subtle-bg)", border: "2px solid var(--accent)" }}>
+                      <span className="text-lg font-bold" style={{ color: "var(--accent)" }}>| |</span>
+                    </button>
+                  )}
+                  {timerSeconds > 0 && (
+                    <button type="button" onClick={stopTimer}
+                      className="w-14 h-14 rounded-full flex items-center justify-center"
+                      style={{ background: "rgba(239,68,68,0.1)", border: "2px solid #EF4444" }}>
+                      <span className="text-lg font-bold" style={{ color: "#EF4444" }}>&#9632;</span>
+                    </button>
+                  )}
+                </div>
+                <p className="text-[10px]" style={{ color: "var(--text3)" }}>
+                  {timerRunning ? "Laeuft..." : timerSeconds > 0 ? "Pausiert — Stopp uebernimmt Dauer" : "Optional: Timer starten"}
+                </p>
+              </div>
+            </Card>
 
             {/* Duration */}
             <Card className="mb-3">

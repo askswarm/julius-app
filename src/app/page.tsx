@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { Dumbbell, ChevronRight } from "lucide-react";
+import { Dumbbell, ChevronRight, BarChart3 } from "lucide-react";
+import Link from "next/link";
 import { useUser } from "@/lib/UserContext";
 import { getTodayScores, getTodayMacros, getTodayTraining, getTodaySupplements, getTrainingLoad, getTodayMacroAdjustment } from "@/lib/queries";
 import { TRAINING_SCHEDULE } from "@/lib/constants";
@@ -123,6 +124,24 @@ export default function HomePage() {
         <span className="text-[11px] font-semibold uppercase tracking-[1px] block mb-3" style={{ color: "var(--text2)" }}>Supplements</span>
         <SupplementStatus takenSlots={supplements} />
       </Card>
+
+      {/* Week Report Link */}
+      <Link href="/report">
+        <Card className="animate-fade-in stagger-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "rgba(121,192,255,0.1)" }}>
+                <BarChart3 size={20} style={{ color: "var(--accent2)" }} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">Wochen-Report</p>
+                <p className="text-xs" style={{ color: "var(--text2)" }}>Training, Ernaehrung, Schlaf</p>
+              </div>
+            </div>
+            <ChevronRight size={18} style={{ color: "var(--text3)" }} />
+          </div>
+        </Card>
+      </Link>
     </div>
   );
 }

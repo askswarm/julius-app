@@ -5,7 +5,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Line } fro
 import { useUser } from "@/lib/UserContext";
 import { getTodayScores, getScoreHistory } from "@/lib/queries";
 import { COLORS } from "@/lib/constants";
-import { SLEEP_HERO } from "@/lib/images";
+import { getSleepHero } from "@/lib/images";
 import type { DailyScore } from "@/lib/types";
 import FamilySwitcher from "@/components/FamilySwitcher";
 import ScoreRing from "@/components/ScoreRing";
@@ -38,7 +38,7 @@ function SleepTip({ score }: { score: number | null }) {
 }
 
 export default function SchlafPage() {
-  const { user } = useUser();
+  const { user, userKey } = useUser();
   const [today, setToday] = useState<DailyScore | null>(null);
   const [history, setHistory] = useState<DailyScore[]>([]);
   const [days, setDays] = useState(14);
@@ -73,7 +73,7 @@ export default function SchlafPage() {
 
       {/* Hero Score with image */}
       <div className="rounded-[20px] overflow-hidden relative" style={{ minHeight: 280 }}>
-        <img src={SLEEP_HERO} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <img src={getSleepHero(userKey)} alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0" style={{ background: "rgba(13,17,23,0.7)" }} />
         <div className="relative flex flex-col items-center py-8">
         <ScoreRing value={today?.sleep ?? null} label="Schlaf-Score" color={COLORS.primary} size={120} />

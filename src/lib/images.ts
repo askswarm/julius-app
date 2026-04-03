@@ -78,4 +78,11 @@ export function matchTrainingImage(typ: string, user: string = "vincent"): strin
   return fallbackImages.kraft;
 }
 
-export const SLEEP_HERO = "https://images.unsplash.com/photo-1495197359483-d092478c170a?w=800&h=300&fit=crop";
+const SLEEP_HEROES: Record<string, string> = {
+  vincent: "https://images.unsplash.com/photo-1507400492013-162706c8c05e?w=800&h=300&fit=crop",
+  maria: "https://images.unsplash.com/photo-1495197359483-d092478c170a?w=800&h=300&fit=crop",
+};
+
+export function getSleepHero(user: string = "vincent"): string {
+  return SLEEP_HEROES[user] || SLEEP_HEROES.vincent;
+}

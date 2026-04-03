@@ -355,7 +355,7 @@ export default function ChatPage() {
 
       {/* Input */}
       <div className="px-3 md:px-6 pt-3 flex items-end gap-2" style={{ background: "var(--card)", borderTop: "1px solid var(--card-border)", paddingBottom: "max(12px, env(safe-area-inset-bottom))", position: "relative", zIndex: 10 }}>
-        <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => {
+        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
           const file = e.target.files?.[0];
           if (!file) return;
           const reader = new FileReader();

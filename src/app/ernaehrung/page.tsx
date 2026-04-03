@@ -251,7 +251,7 @@ export default function ErnaehrungPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onPhotoChange} />
+      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPhotoChange} />
 
       {/* Hero Image */}
       <div className="rounded-[20px] overflow-hidden relative animate-fade-in" style={{ height: 140 }}>

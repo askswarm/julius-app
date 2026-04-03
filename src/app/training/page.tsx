@@ -545,7 +545,7 @@ export default function TrainingPage() {
             </div>
 
             {/* Workout Photo */}
-            <input ref={photoRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={analyzeWorkoutPhoto} />
+            <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={analyzeWorkoutPhoto} />
             <button type="button" onClick={() => photoRef.current?.click()} disabled={analyzingPhoto}
               className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl mb-3 text-sm font-medium transition-all"
               style={{ background: "var(--subtle-bg)", border: "1px solid var(--card-border)", color: "var(--text2)" }}>

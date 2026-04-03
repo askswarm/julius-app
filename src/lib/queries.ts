@@ -148,7 +148,7 @@ export async function getTodayOura(chatId: number) {
 export async function getOuraHistory(chatId: number, days: number = 14) {
   const { data } = await supabase
     .from("oura_data")
-    .select("datum, sleep_score, readiness_score, deep_sleep_min, rem_sleep_min, light_sleep_min, total_sleep_min, sleep_efficiency, resting_hr, active_calories, steps")
+    .select("datum, sleep_score, readiness_score, deep_sleep_min, rem_sleep_min, light_sleep_min, total_sleep_min, sleep_efficiency, resting_hr, active_calories, steps, avg_hrv, lowest_hr, stress_score, vo2_max, cardiovascular_age, spo2_percentage, temperature_deviation, resilience_level")
     .eq("chat_id", chatId)
     .gte("datum", daysAgo(days))
     .order("datum");

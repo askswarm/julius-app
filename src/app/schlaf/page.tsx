@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Line, BarChart, Bar, LineChart } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Line, LineChart } from "recharts";
 import { useUser } from "@/lib/UserContext";
 import { getTodayScores, getScoreHistory, getTodayOura, getOuraHistory } from "@/lib/queries";
 import { COLORS } from "@/lib/constants";
@@ -11,45 +11,62 @@ import FamilySwitcher from "@/components/FamilySwitcher";
 import ScoreRing from "@/components/ScoreRing";
 import Card from "@/components/Card";
 
-const STATUS_COLORS: Record<string, string> = {
-  GRUEN: "#10B981", GELB: "#F59E0B", ROT: "#EF4444", ALARM: "#DC2626",
-};
-const STATUS_LABELS: Record<string, string> = {
-  GRUEN: "Optimal", GELB: "Solide", ROT: "Recovery noetig", ALARM: "Ruhetag",
-};
+const STATUS_COLORS: Record<string, string> = { GRUEN: "#10B981", GELB: "#F59E0B", ROT: "#EF4444", ALARM: "#DC2626" };
+const STATUS_LABELS: Record<string, string> = { GRUEN: "Optimal", GELB: "Solide", ROT: "Recovery noetig", ALARM: "Ruhetag" };
 
-function SleepTip({ score }: { score: number | null }) {
-  if (!score) return null;
-  if (score >= 85) return (
-    <Card className="border-l-4 border-emerald-500"><p className="text-sm">Exzellent. Routine beibehalten.</p></Card>
-  );
-  if (score >= 70) return (
-    <Card className="border-l-4 border-amber-500"><p className="text-sm">Solide Basis. Schlafzimmer auf 18C kuehlen. Glycin + Magnesium nicht vergessen.</p></Card>
-  );
+const PHASE_COLORS: Record<string, string> = { "1": "#1E3A5F", "2": "#60A5FA", "3": "#7C3AED", "4": "#EF4444" };
+const PHASE_LABELS: Record<string, string> = { "1": "Deep", "2": "Light", "3": "REM", "4": "Wach" };
+
+function Hypnogram({ data, start, end }: { data: string; start: string; end: string }) {
+  if (!data) return null;
+  const phases = data.split("");
+  const startTime = start ? new Date(start).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) : "";
+  const endTime = end ? new Date(end).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) : "";
+
+  // Map phase to y-position (inverted: deep at bottom)
+  const yMap: Record<string, number> = { "1": 0, "2": 1, "3": 2, "4": 3 };
+
   return (
-    <Card className="border-l-4 border-red-500"><p className="text-sm">Bildschirme ab 21:00 ausschalten. Glycin + Magnesium erhoehen. Kein Koffein nach 12 Uhr.</p></Card>
+    <div>
+      <div className="flex items-end h-20 gap-px rounded-lg overflow-hidden" style={{ background: "var(--bar-bg)" }}>
+        {phases.map((p, i) => (
+          <div key={i} className="flex-1" style={{
+            background: PHASE_COLORS[p] || "var(--text3)",
+            height: `${((4 - yMap[p]) / 4) * 100}%`,
+            minWidth: 1,
+            transition: "height 0.2s",
+          }} />
+        ))}
+      </div>
+      <div className="flex justify-between mt-1 text-[9px]" style={{ color: "var(--text3)" }}>
+        <span>{startTime}</span>
+        <span>{endTime}</span>
+      </div>
+    </div>
   );
 }
 
+function SleepTip({ score }: { score: number | null }) {
+  if (!score) return null;
+  if (score >= 85) return <Card className="border-l-4 border-emerald-500"><p className="text-sm">Exzellent. Routine beibehalten.</p></Card>;
+  if (score >= 70) return <Card className="border-l-4 border-amber-500"><p className="text-sm">Solide Basis. Schlafzimmer 18C. Glycin + Magnesium.</p></Card>;
+  return <Card className="border-l-4 border-red-500"><p className="text-sm">Bildschirme ab 21:00 aus. Glycin + Magnesium erhoehen. Kein Koffein nach 12.</p></Card>;
+}
+
 interface OuraDay {
-  datum: string;
-  sleep_score: number | null;
-  readiness_score: number | null;
-  deep_sleep_min: number | null;
-  rem_sleep_min: number | null;
-  light_sleep_min: number | null;
-  total_sleep_min: number | null;
-  sleep_efficiency: number | null;
-  resting_hr: number | null;
-  active_calories: number | null;
-  steps: number | null;
+  datum: string; sleep_score: number | null; readiness_score: number | null;
+  deep_sleep_min: number | null; rem_sleep_min: number | null; light_sleep_min: number | null;
+  total_sleep_min: number | null; sleep_efficiency: number | null; resting_hr: number | null;
+  avg_hrv: number | null; lowest_hr: number | null; spo2_percentage: number | null;
+  temperature_deviation: number | null; steps: number | null; active_calories: number | null;
 }
 
 export default function SchlafPage() {
   const { user, userKey } = useUser();
   const [today, setToday] = useState<DailyScore | null>(null);
   const [history, setHistory] = useState<DailyScore[]>([]);
-  const [ouraToday, setOuraToday] = useState<OuraDay | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [ouraToday, setOuraToday] = useState<any>(null);
   const [ouraHistory, setOuraHistory] = useState<OuraDay[]>([]);
   const [days, setDays] = useState(14);
 
@@ -57,31 +74,38 @@ export default function SchlafPage() {
     getTodayScores(user.id).then(setToday);
     getScoreHistory(user.id, days).then(setHistory);
     getTodayOura(user.id).then(setOuraToday);
-    getOuraHistory(user.id, days).then(setOuraHistory);
+    getOuraHistory(user.id, days).then((d) => setOuraHistory(d as OuraDay[]));
   }, [user.id, days]);
 
   const statusColor = STATUS_COLORS[today?.day_status || "GELB"] || "#F59E0B";
-
   const sleepVals = history.filter((h) => h.sleep).map((h) => h.sleep!);
-  const readyVals = history.filter((h) => h.readiness).map((h) => h.readiness!);
   const avgSleep = sleepVals.length ? Math.round(sleepVals.reduce((a, b) => a + b, 0) / sleepVals.length) : null;
-  const avgReady = readyVals.length ? Math.round(readyVals.reduce((a, b) => a + b, 0) / readyVals.length) : null;
-  const worstNight = history.reduce((min, h) => (!min || (h.sleep && h.sleep < (min.sleep || 999)) ? h : min), null as DailyScore | null);
 
-  const chartData = history.map((h) => ({
-    date: h.datum?.slice(5) || "",
-    schlaf: h.sleep,
-    readiness: h.readiness,
-  }));
+  const chartData = history.map((h) => ({ date: h.datum?.slice(5) || "", schlaf: h.sleep, readiness: h.readiness }));
 
-  // Sleep phases from Oura
-  const hasPhases = ouraToday && (ouraToday.deep_sleep_min || ouraToday.rem_sleep_min || ouraToday.light_sleep_min);
-  const totalMin = (ouraToday?.deep_sleep_min || 0) + (ouraToday?.rem_sleep_min || 0) + (ouraToday?.light_sleep_min || 0);
+  // Oura details
+  const deepMin = ouraToday?.deep_sleep_min || 0;
+  const remMin = ouraToday?.rem_sleep_min || 0;
+  const lightMin = ouraToday?.light_sleep_min || 0;
+  const awakeMin = ouraToday?.awake_min || 0;
+  const totalMin = deepMin + remMin + lightMin;
+  const efficiency = ouraToday?.sleep_efficiency || 0;
+  const hypnogram = ouraToday?.hypnogram || "";
 
-  // HR trend
-  const hrData = ouraHistory
-    .filter((d) => d.resting_hr)
-    .map((d) => ({ date: d.datum?.slice(5), hr: d.resting_hr }));
+  // Trends
+  const hrvData = ouraHistory.filter((d) => d.avg_hrv).map((d) => ({ date: d.datum?.slice(5), hrv: d.avg_hrv }));
+  const hrData = ouraHistory.filter((d) => d.lowest_hr || d.resting_hr).map((d) => ({ date: d.datum?.slice(5), hr: d.lowest_hr || d.resting_hr }));
+  const tempData = ouraHistory.filter((d) => d.temperature_deviation != null).map((d) => ({ date: d.datum?.slice(5), temp: d.temperature_deviation }));
+
+  // Temperature assessment
+  const tempDev = ouraToday?.temperature_deviation as number | null;
+  const tempStatus = tempDev == null ? null : Math.abs(tempDev) <= 0.3 ? "normal" : tempDev > 1.0 ? "high" : "elevated";
+  const tempColors = { normal: "#10B981", elevated: "#F59E0B", high: "#EF4444" };
+  const tempLabels = { normal: "Normal", elevated: "Leicht erhoet — beobachten", high: "Erhoet — moegliche Erkrankung" };
+
+  // SpO2
+  const spo2 = ouraToday?.spo2_percentage as number | null;
+  const spo2Status = spo2 == null ? null : spo2 >= 96 ? "normal" : spo2 >= 93 ? "low" : "critical";
 
   return (
     <div className="flex flex-col gap-4">
@@ -91,60 +115,130 @@ export default function SchlafPage() {
       </div>
 
       {/* Hero */}
-      <div className="rounded-[20px] overflow-hidden relative" style={{ minHeight: 280 }}>
+      <div className="rounded-[20px] overflow-hidden relative" style={{ minHeight: 260 }}>
         <img src={getSleepHero(userKey)} alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0" style={{ background: "rgba(13,17,23,0.7)" }} />
         <div className="relative flex flex-col items-center py-8">
           <ScoreRing value={today?.sleep ?? null} label="Schlaf-Score" color={COLORS.primary} size={120} />
-          <div className="mt-4 flex gap-6 text-center">
-            <div>
-              <p className="text-lg font-semibold text-white">{today?.readiness ?? "--"}</p>
-              <p className="text-xs text-slate-400">Readiness</p>
-            </div>
-            <div>
-              <p className="text-lg font-semibold text-white">{avgSleep ?? "--"}</p>
-              <p className="text-xs text-slate-400">{days}T Schnitt</p>
-            </div>
-            {ouraToday?.sleep_efficiency != null && (
-              <div>
-                <p className="text-lg font-semibold text-white">{ouraToday.sleep_efficiency}%</p>
-                <p className="text-xs text-slate-400">Effizienz</p>
-              </div>
-            )}
+          <div className="mt-3 flex gap-4 text-center text-white">
+            {totalMin > 0 && <div><p className="text-sm font-semibold">{Math.floor(totalMin / 60)}h {totalMin % 60}m</p><p className="text-[10px] text-slate-400">Gesamt</p></div>}
+            {efficiency > 0 && <div><p className="text-sm font-semibold">{efficiency}%</p><p className="text-[10px] text-slate-400">Effizienz</p></div>}
+            <div><p className="text-sm font-semibold">{avgSleep ?? "--"}</p><p className="text-[10px] text-slate-400">{days}T Schnitt</p></div>
           </div>
           {today?.day_status && (
-            <span className="mt-3 px-3 py-1 rounded-full text-xs font-medium text-white" style={{ backgroundColor: statusColor }}>
+            <span className="mt-2 px-3 py-1 rounded-full text-xs font-medium text-white" style={{ backgroundColor: statusColor }}>
               {STATUS_LABELS[today.day_status] || today.day_status}
             </span>
           )}
         </div>
       </div>
 
-      {/* Sleep Phases */}
-      {hasPhases && (
+      {/* Hypnogram */}
+      {hypnogram && (
         <Card>
-          <h3 className="text-sm font-medium mb-3">Schlafphasen</h3>
-          <div className="flex h-6 rounded-full overflow-hidden mb-2">
-            {ouraToday!.deep_sleep_min! > 0 && (
-              <div style={{ width: `${(ouraToday!.deep_sleep_min! / totalMin) * 100}%`, background: "#1E40AF" }} title="Deep" />
-            )}
-            {ouraToday!.rem_sleep_min! > 0 && (
-              <div style={{ width: `${(ouraToday!.rem_sleep_min! / totalMin) * 100}%`, background: "#7C3AED" }} title="REM" />
-            )}
-            {ouraToday!.light_sleep_min! > 0 && (
-              <div style={{ width: `${(ouraToday!.light_sleep_min! / totalMin) * 100}%`, background: "#38BDF8" }} title="Light" />
-            )}
-          </div>
-          <div className="flex justify-between text-[10px]" style={{ color: "var(--text2)" }}>
-            <span style={{ color: "#1E40AF" }}>Deep: {ouraToday!.deep_sleep_min}m</span>
-            <span style={{ color: "#7C3AED" }}>REM: {ouraToday!.rem_sleep_min}m</span>
-            <span style={{ color: "#38BDF8" }}>Light: {ouraToday!.light_sleep_min}m</span>
-            <span>Total: {Math.round(totalMin / 60)}h {totalMin % 60}m</span>
+          <h3 className="text-sm font-medium mb-2">Schlafphasen</h3>
+          <Hypnogram data={hypnogram} start={ouraToday?.bedtime_start || ""} end={ouraToday?.bedtime_end || ""} />
+          <div className="flex justify-between mt-2 text-[10px]">
+            <span style={{ color: "#1E3A5F" }}>Deep: {deepMin}m</span>
+            <span style={{ color: "#7C3AED" }}>REM: {remMin}m</span>
+            <span style={{ color: "#60A5FA" }}>Light: {lightMin}m</span>
+            {awakeMin > 0 && <span style={{ color: "#EF4444" }}>Wach: {awakeMin}m</span>}
           </div>
         </Card>
       )}
 
-      {/* Trend Chart */}
+      {/* Sleep phases bar (fallback if no hypnogram) */}
+      {!hypnogram && totalMin > 0 && (
+        <Card>
+          <h3 className="text-sm font-medium mb-2">Schlafphasen</h3>
+          <div className="flex h-6 rounded-full overflow-hidden">
+            {deepMin > 0 && <div style={{ width: `${(deepMin / totalMin) * 100}%`, background: "#1E3A5F" }} />}
+            {remMin > 0 && <div style={{ width: `${(remMin / totalMin) * 100}%`, background: "#7C3AED" }} />}
+            {lightMin > 0 && <div style={{ width: `${(lightMin / totalMin) * 100}%`, background: "#60A5FA" }} />}
+          </div>
+          <div className="flex justify-between mt-2 text-[10px]" style={{ color: "var(--text2)" }}>
+            <span style={{ color: "#1E3A5F" }}>Deep: {deepMin}m</span>
+            <span style={{ color: "#7C3AED" }}>REM: {remMin}m</span>
+            <span style={{ color: "#60A5FA" }}>Light: {lightMin}m</span>
+          </div>
+        </Card>
+      )}
+
+      {/* HRV Trend */}
+      {hrvData.length > 2 && (
+        <Card>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium">HRV Trend</h3>
+            <span className="text-xs font-bold" style={{ color: "var(--accent)" }}>{ouraToday?.avg_hrv ? Math.round(ouraToday.avg_hrv) : "--"} ms</span>
+          </div>
+          <ResponsiveContainer width="100%" height={120}>
+            <AreaChart data={hrvData}>
+              <defs>
+                <linearGradient id="hrvGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#7EE2B8" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#7EE2B8" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="date" tick={{ fontSize: 9 }} />
+              <YAxis tick={{ fontSize: 9 }} domain={["auto", "auto"]} />
+              <Tooltip />
+              <Area type="monotone" dataKey="hrv" stroke="#7EE2B8" fill="url(#hrvGrad)" strokeWidth={2} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </Card>
+      )}
+
+      {/* Resting HR Trend */}
+      {hrData.length > 2 && (
+        <Card>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium">Ruhepuls Trend</h3>
+            <span className="text-xs font-bold" style={{ color: "#EF4444" }}>{ouraToday?.lowest_hr || ouraToday?.resting_hr || "--"} bpm</span>
+          </div>
+          <ResponsiveContainer width="100%" height={100}>
+            <LineChart data={hrData}>
+              <XAxis dataKey="date" tick={{ fontSize: 9 }} />
+              <YAxis tick={{ fontSize: 9 }} domain={["auto", "auto"]} />
+              <Tooltip />
+              <Line type="monotone" dataKey="hr" stroke="#EF4444" strokeWidth={2} dot={{ r: 2 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
+      )}
+
+      {/* Temperature + SpO2 */}
+      <div className="grid grid-cols-2 gap-3">
+        {tempStatus && (
+          <Card>
+            <p className="text-xs" style={{ color: "var(--text3)" }}>Temperatur</p>
+            <p className="text-xl font-bold" style={{ color: tempColors[tempStatus] }}>
+              {tempDev! > 0 ? "+" : ""}{tempDev!.toFixed(1)}°
+            </p>
+            <p className="text-[10px]" style={{ color: tempColors[tempStatus] }}>{tempLabels[tempStatus]}</p>
+          </Card>
+        )}
+        {spo2Status && (
+          <Card>
+            <p className="text-xs" style={{ color: "var(--text3)" }}>SpO2</p>
+            <p className="text-xl font-bold" style={{ color: spo2Status === "normal" ? "#10B981" : spo2Status === "low" ? "#F59E0B" : "#EF4444" }}>
+              {spo2}%
+            </p>
+            <p className="text-[10px]" style={{ color: "var(--text3)" }}>
+              {spo2Status === "normal" ? "Normal" : spo2Status === "low" ? "Leicht reduziert" : "Niedrig — Arzt konsultieren"}
+            </p>
+          </Card>
+        )}
+      </div>
+
+      {/* Recommended bedtime */}
+      {ouraToday?.recommended_bedtime && (
+        <Card>
+          <p className="text-xs" style={{ color: "var(--text3)" }}>Oura empfiehlt</p>
+          <p className="text-sm font-medium" style={{ color: "var(--text)" }}>Schlafenszeit: {ouraToday.recommended_bedtime}</p>
+        </Card>
+      )}
+
+      {/* Schlaf Trend */}
       <Card>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-medium">Schlaf-Trend</h3>
@@ -159,61 +253,25 @@ export default function SchlafPage() {
           </div>
         </div>
         {chartData.length > 0 ? (
-          <ResponsiveContainer width="100%" height={180}>
+          <ResponsiveContainer width="100%" height={160}>
             <AreaChart data={chartData}>
               <defs>
-                <linearGradient id="sleepGrad" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="sleepGrad2" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.3} />
                   <stop offset="95%" stopColor={COLORS.primary} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-              <YAxis domain={[40, 100]} tick={{ fontSize: 10 }} />
+              <XAxis dataKey="date" tick={{ fontSize: 9 }} />
+              <YAxis domain={[40, 100]} tick={{ fontSize: 9 }} />
               <Tooltip />
-              <Area type="monotone" dataKey="schlaf" stroke={COLORS.primary} fill="url(#sleepGrad)" strokeWidth={2} />
+              <Area type="monotone" dataKey="schlaf" stroke={COLORS.primary} fill="url(#sleepGrad2)" strokeWidth={2} />
               <Line type="monotone" dataKey="readiness" stroke={COLORS.green} strokeWidth={1.5} strokeDasharray="4 4" dot={false} />
             </AreaChart>
           </ResponsiveContainer>
         ) : (
-          <p className="text-sm text-center py-8" style={{ color: "var(--text3)" }}>Noch keine Daten. Oura-Ring verbinden in Einstellungen.</p>
+          <p className="text-sm text-center py-8" style={{ color: "var(--text3)" }}>Oura-Ring verbinden in Einstellungen.</p>
         )}
       </Card>
-
-      {/* Resting HR Trend */}
-      {hrData.length > 2 && (
-        <Card>
-          <h3 className="text-sm font-medium mb-3">Ruhepuls-Trend</h3>
-          <ResponsiveContainer width="100%" height={120}>
-            <LineChart data={hrData}>
-              <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-              <YAxis domain={["auto", "auto"]} tick={{ fontSize: 10 }} />
-              <Tooltip />
-              <Line type="monotone" dataKey="hr" stroke="#EF4444" strokeWidth={2} dot={{ r: 2 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </Card>
-      )}
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-3">
-        <Card>
-          <p className="text-xs" style={{ color: "var(--text3)" }}>Schlaf-Schnitt</p>
-          <p className="text-2xl font-bold" style={{ color: COLORS.primary }}>{avgSleep ?? "--"}</p>
-        </Card>
-        <Card>
-          <p className="text-xs" style={{ color: "var(--text3)" }}>Readiness-Schnitt</p>
-          <p className="text-2xl font-bold" style={{ color: COLORS.green }}>{avgReady ?? "--"}</p>
-        </Card>
-        <Card>
-          <p className="text-xs" style={{ color: "var(--text3)" }}>Tage getrackt</p>
-          <p className="text-2xl font-bold">{history.length}</p>
-        </Card>
-        <Card>
-          <p className="text-xs" style={{ color: "var(--text3)" }}>Schlechteste Nacht</p>
-          <p className="text-2xl font-bold text-red-500">{worstNight?.sleep ?? "--"}</p>
-          <p className="text-[10px]" style={{ color: "var(--text3)" }}>{worstNight?.datum?.slice(5) || ""}</p>
-        </Card>
-      </div>
 
       <SleepTip score={today?.sleep ?? avgSleep} />
     </div>

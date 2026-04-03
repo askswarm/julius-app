@@ -9,6 +9,7 @@ import FamilySwitcher from "@/components/FamilySwitcher";
 import Card from "@/components/Card";
 import ScoreRing from "@/components/ScoreRing";
 import Toast from "@/components/Toast";
+import SupplementAdvisor from "@/components/SupplementAdvisor";
 
 const TABS = ["Tagesplan", "Mein Stack", "Blutwerte"] as const;
 type Tab = (typeof TABS)[number];
@@ -170,6 +171,9 @@ export default function SupplementsPage() {
               </div>
             )}
           </Card>
+
+          {/* Supplement Advisor */}
+          <SupplementAdvisor />
         </div>
       )}
 

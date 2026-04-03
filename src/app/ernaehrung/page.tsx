@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { Camera, MessageSquare, BookOpen, X, Check, Loader2 } from "lucide-react";
 import { useUser } from "@/lib/UserContext";
 import { getTodayMeals, getTodayMacros } from "@/lib/queries";
 import type { NutritionEntry, MacroSummary } from "@/lib/types";
@@ -8,6 +9,7 @@ import { matchFoodImage } from "@/lib/images";
 import FamilySwitcher from "@/components/FamilySwitcher";
 import Card from "@/components/Card";
 import MacroBar from "@/components/MacroBar";
+import Toast from "@/components/Toast";
 
 const TABS = ["Heute", "Wochenplan", "Einkaufsliste"] as const;
 type Tab = (typeof TABS)[number];
@@ -15,20 +17,21 @@ type Tab = (typeof TABS)[number];
 const MEAL_ORDER = ["fruehstueck", "mittagessen", "abendessen", "snack"];
 const MEAL_LABELS: Record<string, string> = { fruehstueck: "Fruehstueck", mittagessen: "Mittagessen", abendessen: "Abendessen", snack: "Snack" };
 
-const FOOD_IMAGES: Record<string, string> = {
-  default: "photo-1546069901-ba9599a7e63c",
-  fruehstueck: "photo-1525351484163-7529414344d8",
-  mittagessen: "photo-1512621776951-a57141f2eefd",
-  abendessen: "photo-1467003909585-2f8a72700288",
-  snack: "photo-1502741224143-90386d7f8c82",
-};
-
 const GRADIENTS = {
   protein: "linear-gradient(90deg, #2EA67A, #7EE2B8)",
   carbs: "linear-gradient(90deg, #1D4ED8, #79C0FF)",
   fett: "linear-gradient(90deg, #D97706, #FBBF24)",
   kcal: "linear-gradient(90deg, #F97316, #FBBF24)",
 };
+
+interface AnalysisResult {
+  gericht_name: string;
+  kalorien: number;
+  protein_g: number;
+  kohlenhydrate_g: number;
+  fett_g: number;
+  ballaststoffe_g: number;
+}
 
 function MealCard({ entry }: { entry: NutritionEntry }) {
   const imgUrl = matchFoodImage(entry.gericht_name || "");
@@ -70,17 +73,88 @@ export default function ErnaehrungPage() {
   const [tab, setTab] = useState<Tab>("Heute");
   const [meals, setMeals] = useState<NutritionEntry[]>([]);
   const [macros, setMacros] = useState<MacroSummary>({ kcal: 0, protein_g: 0, carbs_g: 0, fett_g: 0, wasser_ml: 0 });
+  const [toast, setToast] = useState("");
 
-  useEffect(() => {
+  // Modal state
+  const [showModal, setShowModal] = useState(false);
+  const [modalMealType, setModalMealType] = useState("snack");
+  const [modalMode, setModalMode] = useState<"choose" | "text" | "confirm">("choose");
+  const [textInput, setTextInput] = useState("");
+  const [pendingImage, setPendingImage] = useState<string | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const reload = useCallback(() => {
     getTodayMeals(user.id).then(setMeals);
     getTodayMacros(user.id).then(setMacros);
   }, [user.id]);
 
+  useEffect(() => { reload(); }, [reload]);
+
   const mealsByType: Record<string, NutritionEntry[]> = {};
   meals.forEach((m) => { const t = m.mahlzeit_typ || "snack"; (mealsByType[t] ||= []).push(m); });
 
+  function openModal(mealType: string) {
+    setModalMealType(mealType);
+    setModalMode("choose");
+    setTextInput("");
+    setPendingImage(null);
+    setAnalysis(null);
+    setShowModal(true);
+  }
+
+  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPendingImage(reader.result as string);
+      analyzeFood(undefined, reader.result as string);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  }
+
+  async function analyzeFood(text?: string, image?: string) {
+    setAnalyzing(true);
+    setModalMode("confirm");
+
+    try {
+      const res = await fetch("/api/nutrition", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: text || undefined,
+          image: image || undefined,
+          chatId: user.id,
+          mealType: modalMealType,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success && data.analysis) {
+        setAnalysis(data.analysis);
+        setShowModal(false);
+        setToast("Mahlzeit gespeichert!");
+        reload();
+      } else {
+        setAnalysis(null);
+        setToast(data.error || "Analyse fehlgeschlagen");
+        setShowModal(false);
+      }
+    } catch {
+      setToast("Verbindungsfehler");
+      setShowModal(false);
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
+      <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFileChange} />
+
       <div className="flex items-center justify-between animate-fade-in">
         <h1 className="text-xl font-bold">Ernaehrung</h1>
         <FamilySwitcher />
@@ -102,14 +176,21 @@ export default function ErnaehrungPage() {
         <div className="flex flex-col gap-3">
           {MEAL_ORDER.map((type) => {
             const entries = mealsByType[type];
-            if (entries?.length) return entries.map((e) => <MealCard key={e.id} entry={e} />);
-            if (type !== "snack") return (
-              <div key={type} className="rounded-[20px] p-5 text-center" style={{ border: "2px dashed var(--card-border)" }}>
-                <p className="text-sm" style={{ color: "var(--text3)" }}>{MEAL_LABELS[type]}</p>
-                <p className="text-xs mt-1" style={{ color: "var(--text3)" }}>Foto senden oder /meal im Bot</p>
-              </div>
+            if (entries?.length) {
+              return (
+                <div key={type}>
+                  {entries.map((e) => <MealCard key={e.id} entry={e} />)}
+                </div>
+              );
+            }
+            return (
+              <button key={type} onClick={() => openModal(type)}
+                className="rounded-[20px] p-5 text-center transition-all hover:scale-[1.01]"
+                style={{ border: "2px dashed var(--card-border)" }}>
+                <p className="text-sm font-medium" style={{ color: "var(--text3)" }}>{MEAL_LABELS[type]}</p>
+                <p className="text-xs mt-1" style={{ color: "var(--accent)" }}>+ Mahlzeit hinzufuegen</p>
+              </button>
             );
-            return null;
           })}
 
           <Card className="animate-fade-in stagger-4">
@@ -128,8 +209,88 @@ export default function ErnaehrungPage() {
         <Card><p className="text-sm text-center py-8" style={{ color: "var(--text3)" }}>Wochenplan wird vom Julius Bot generiert.</p></Card>
       )}
       {tab === "Einkaufsliste" && (
-        <Card><p className="text-sm text-center py-8" style={{ color: "var(--text3)" }}>Einkaufsliste via /einkauf im Telegram Bot.</p></Card>
+        <Card><p className="text-sm text-center py-8" style={{ color: "var(--text3)" }}>Einkaufsliste via Chat an Julius.</p></Card>
       )}
+
+      {/* Meal Log Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
+          <div className="w-full max-w-lg rounded-t-3xl p-6" style={{ background: "#161B22", maxHeight: "80vh", overflowY: "auto" }}>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+                {MEAL_LABELS[modalMealType] || "Mahlzeit"} hinzufuegen
+              </h3>
+              <button onClick={() => setShowModal(false)} style={{ color: "var(--text3)" }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {modalMode === "choose" && (
+              <div className="flex flex-col gap-3">
+                <button onClick={() => fileRef.current?.click()}
+                  className="flex items-center gap-3 p-4 rounded-2xl transition-all hover:scale-[1.01]"
+                  style={{ background: "rgba(126,226,184,0.08)", border: "1px solid var(--card-border)" }}>
+                  <Camera size={24} style={{ color: "var(--accent)" }} />
+                  <div className="text-left">
+                    <p className="text-sm font-medium" style={{ color: "var(--text)" }}>Foto</p>
+                    <p className="text-xs" style={{ color: "var(--text3)" }}>Kamera oder Galerie</p>
+                  </div>
+                </button>
+
+                <button onClick={() => setModalMode("text")}
+                  className="flex items-center gap-3 p-4 rounded-2xl transition-all hover:scale-[1.01]"
+                  style={{ background: "rgba(121,192,255,0.08)", border: "1px solid var(--card-border)" }}>
+                  <MessageSquare size={24} style={{ color: "var(--accent2)" }} />
+                  <div className="text-left">
+                    <p className="text-sm font-medium" style={{ color: "var(--text)" }}>Text</p>
+                    <p className="text-xs" style={{ color: "var(--text3)" }}>Beschreibe dein Essen</p>
+                  </div>
+                </button>
+
+                <button className="flex items-center gap-3 p-4 rounded-2xl opacity-50"
+                  style={{ background: "rgba(249,115,22,0.08)", border: "1px solid var(--card-border)" }}>
+                  <BookOpen size={24} style={{ color: "var(--orange)" }} />
+                  <div className="text-left">
+                    <p className="text-sm font-medium" style={{ color: "var(--text)" }}>Aus Wochenplan</p>
+                    <p className="text-xs" style={{ color: "var(--text3)" }}>Kommt bald</p>
+                  </div>
+                </button>
+              </div>
+            )}
+
+            {modalMode === "text" && (
+              <div className="flex flex-col gap-3">
+                <textarea
+                  value={textInput}
+                  onChange={(e) => setTextInput(e.target.value)}
+                  placeholder="z.B. Griechischer Joghurt mit Honig und Walnuessen, ca. 250g"
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-2xl bg-transparent border text-sm resize-none"
+                  style={{ borderColor: "var(--card-border)", color: "var(--text)" }}
+                  autoFocus
+                />
+                <button
+                  onClick={() => analyzeFood(textInput)}
+                  disabled={!textInput.trim()}
+                  className="w-full py-3 rounded-2xl text-sm font-semibold transition-all"
+                  style={{ background: textInput.trim() ? "var(--grad-teal)" : "var(--text3)", color: "#0D1117" }}
+                >
+                  Analysieren
+                </button>
+              </div>
+            )}
+
+            {modalMode === "confirm" && analyzing && (
+              <div className="flex flex-col items-center gap-3 py-8">
+                <Loader2 size={32} className="animate-spin" style={{ color: "var(--accent)" }} />
+                <p className="text-sm" style={{ color: "var(--text2)" }}>Claude analysiert...</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <Toast message={toast} visible={!!toast} onHide={() => setToast("")} />
     </div>
   );
 }

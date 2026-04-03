@@ -16,6 +16,7 @@ import type { TrainingEntry } from "@/lib/types";
 import FamilySwitcher from "@/components/FamilySwitcher";
 import Card from "@/components/Card";
 import Toast from "@/components/Toast";
+import MuscleMap from "@/components/MuscleMap";
 
 const TABS = ["Uebersicht", "Wochenplan", "Performance"] as const;
 type Tab = (typeof TABS)[number];
@@ -420,6 +421,12 @@ export default function TrainingPage() {
                 ))}
               </div>
             </div>
+          </Card>
+
+          {/* Muscle Map */}
+          <Card>
+            <h3 className="text-sm font-medium mb-3">Muskelgruppen (7 Tage)</h3>
+            <MuscleMap />
           </Card>
         </div>
       )}

@@ -6,7 +6,7 @@ import { ThemeProvider } from "@/lib/ThemeContext";
 import BottomNav from "@/components/BottomNav";
 import ChatFAB from "@/components/ChatFAB";
 import PushSetup from "@/components/PushSetup";
-import SplashScreen from "@/components/SplashScreen";
+import AppShell from "@/components/AppShell";
 
 const font = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
@@ -27,11 +27,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${font.className} min-h-full`}>
         <ThemeProvider>
           <UserProvider>
-            <main className="max-w-lg mx-auto px-4 py-5 md:max-w-2xl md:ml-20">{children}</main>
-            <BottomNav />
-            <ChatFAB />
-            <PushSetup />
-            <SplashScreen />
+            <AppShell>
+              <main className="max-w-lg mx-auto px-4 py-5 md:max-w-2xl md:ml-20">{children}</main>
+              <BottomNav />
+              <ChatFAB />
+              <PushSetup />
+            </AppShell>
           </UserProvider>
         </ThemeProvider>
       </body>

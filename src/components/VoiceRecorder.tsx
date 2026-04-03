@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Mic, X, Play, Pause, Send } from "lucide-react";
 
 type VoiceState = "idle" | "recording" | "preview" | "sending";
@@ -16,6 +16,21 @@ function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+function pickMimeType(): string {
+  if (typeof MediaRecorder === "undefined") return "audio/webm";
+  if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) return "audio/webm;codecs=opus";
+  if (MediaRecorder.isTypeSupported("audio/webm")) return "audio/webm";
+  if (MediaRecorder.isTypeSupported("audio/mp4")) return "audio/mp4";
+  if (MediaRecorder.isTypeSupported("audio/ogg")) return "audio/ogg";
+  return "";
+}
+
+function fileExtForMime(mime: string): string {
+  if (mime.includes("mp4")) return "voice.m4a";
+  if (mime.includes("ogg")) return "voice.ogg";
+  return "voice.webm";
+}
+
 export default function VoiceRecorder({ onTranscript, onError }: VoiceRecorderProps) {
   const [state, setState] = useState<VoiceState>("idle");
   const [duration, setDuration] = useState(0);
@@ -24,16 +39,16 @@ export default function VoiceRecorder({ onTranscript, onError }: VoiceRecorderPr
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const mimeRef = useRef(pickMimeType());
   const blobRef = useRef<Blob | null>(null);
   const urlRef = useRef<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stateRef = useRef<VoiceState>("idle");
 
-  // Keep stateRef in sync so event listeners see current value
   stateRef.current = state;
 
-  // Stop stream only on unmount
+  // Cleanup stream on unmount only
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -43,55 +58,50 @@ export default function VoiceRecorder({ onTranscript, onError }: VoiceRecorderPr
     };
   }, []);
 
-  // Global pointerup listener to catch release anywhere on screen
+  // Global release listeners — pointer + touch for cross-device support
   useEffect(() => {
-    function handleGlobalUp() {
+    function handleGlobalRelease() {
       if (stateRef.current === "recording") {
-        stopRecording();
+        doStopRecording();
       }
     }
-    window.addEventListener("pointerup", handleGlobalUp);
-    window.addEventListener("pointercancel", handleGlobalUp);
+    window.addEventListener("pointerup", handleGlobalRelease);
+    window.addEventListener("pointercancel", handleGlobalRelease);
+    window.addEventListener("touchend", handleGlobalRelease);
+    window.addEventListener("touchcancel", handleGlobalRelease);
     return () => {
-      window.removeEventListener("pointerup", handleGlobalUp);
-      window.removeEventListener("pointercancel", handleGlobalUp);
+      window.removeEventListener("pointerup", handleGlobalRelease);
+      window.removeEventListener("pointercancel", handleGlobalRelease);
+      window.removeEventListener("touchend", handleGlobalRelease);
+      window.removeEventListener("touchcancel", handleGlobalRelease);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function getStream(): Promise<MediaStream> {
-    // Reuse existing stream if tracks are still alive
     if (streamRef.current && streamRef.current.getTracks().every((t) => t.readyState === "live")) {
       return streamRef.current;
     }
-    // Get new stream
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     streamRef.current = stream;
     return stream;
   }
 
-  async function startRecording() {
+  async function doStartRecording() {
     if (stateRef.current !== "idle") return;
 
     try {
       const stream = await getStream();
-
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : MediaRecorder.isTypeSupported("audio/webm")
-        ? "audio/webm"
-        : "audio/ogg";
+      const mime = mimeRef.current;
 
       chunksRef.current = [];
-      const recorder = new MediaRecorder(stream, { mimeType });
+      const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
 
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
 
       recorder.onstop = () => {
-        // Do NOT stop stream tracks — keep them alive for next recording
-        const blob = new Blob(chunksRef.current, { type: mimeType });
+        const blob = new Blob(chunksRef.current, { type: mime || "audio/webm" });
         blobRef.current = blob;
 
         if (urlRef.current) URL.revokeObjectURL(urlRef.current);
@@ -115,14 +125,13 @@ export default function VoiceRecorder({ onTranscript, onError }: VoiceRecorderPr
     }
   }
 
-  function stopRecording() {
+  function doStopRecording() {
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-
     if (recorderRef.current && recorderRef.current.state === "recording") {
-      recorderRef.current.stop(); // triggers onstop → sets state to "preview"
+      recorderRef.current.stop();
     }
   }
 
@@ -132,7 +141,6 @@ export default function VoiceRecorder({ onTranscript, onError }: VoiceRecorderPr
       timerRef.current = null;
     }
     if (recorderRef.current && recorderRef.current.state === "recording") {
-      // Override onstop to go to idle instead of preview
       recorderRef.current.onstop = null;
       recorderRef.current.stop();
     }
@@ -169,7 +177,7 @@ export default function VoiceRecorder({ onTranscript, onError }: VoiceRecorderPr
 
     try {
       const formData = new FormData();
-      formData.append("audio", blobRef.current, "voice.webm");
+      formData.append("audio", blobRef.current, fileExtForMime(mimeRef.current));
 
       const res = await fetch("/api/transcribe", { method: "POST", body: formData });
       const data = await res.json();
@@ -193,22 +201,29 @@ export default function VoiceRecorder({ onTranscript, onError }: VoiceRecorderPr
     }
   }
 
-  // IDLE — mic button (press and hold)
+  // Shared press handler — works for both pointer and touch
+  function handlePressStart(e: React.TouchEvent | React.PointerEvent) {
+    e.preventDefault();
+    doStartRecording();
+  }
+
+  // IDLE — mic button
   if (state === "idle") {
     return (
       <button
         type="button"
-        onPointerDown={(e) => { e.preventDefault(); startRecording(); }}
+        onTouchStart={handlePressStart}
+        onPointerDown={handlePressStart}
         onContextMenu={(e) => e.preventDefault()}
-        className="p-2.5 rounded-full transition-colors flex-shrink-0"
-        style={{ color: "var(--text2)", touchAction: "none", userSelect: "none" }}
+        className="flex items-center justify-center rounded-full flex-shrink-0"
+        style={{ color: "var(--text2)", touchAction: "none", userSelect: "none", minWidth: 48, minHeight: 48, padding: 12 }}
       >
         <Mic size={22} />
       </button>
     );
   }
 
-  // RECORDING — pulsing red mic + timer (release anywhere to stop)
+  // RECORDING — pulsing red mic + timer
   if (state === "recording") {
     return (
       <div className="flex items-center gap-2" style={{ touchAction: "none", userSelect: "none" }}>
@@ -230,8 +245,8 @@ export default function VoiceRecorder({ onTranscript, onError }: VoiceRecorderPr
           ))}
         </div>
         <div
-          className="p-2.5 rounded-full flex-shrink-0"
-          style={{ background: "rgba(239,68,68,0.15)", color: "#EF4444" }}
+          className="flex items-center justify-center rounded-full flex-shrink-0"
+          style={{ background: "rgba(239,68,68,0.15)", color: "#EF4444", minWidth: 48, minHeight: 48, padding: 12 }}
         >
           <Mic size={22} className="animate-pulse" />
         </div>
@@ -239,17 +254,19 @@ export default function VoiceRecorder({ onTranscript, onError }: VoiceRecorderPr
     );
   }
 
-  // PREVIEW — play, delete, send
+  // PREVIEW — delete, play, send
   if (state === "preview") {
     return (
       <div className="flex items-center gap-2 flex-1">
-        <button type="button" onClick={cancelRecording} className="p-2 rounded-full flex-shrink-0" style={{ background: "rgba(255,255,255,0.06)", color: "var(--text3)" }}>
+        <button type="button" onClick={cancelRecording}
+          className="flex items-center justify-center rounded-full flex-shrink-0"
+          style={{ background: "rgba(255,255,255,0.06)", color: "var(--text3)", minWidth: 44, minHeight: 44, padding: 10 }}>
           <X size={18} />
         </button>
 
         <button type="button" onClick={togglePlayback}
           className="flex items-center gap-2 flex-1 px-3 py-2 rounded-2xl"
-          style={{ background: "rgba(255,255,255,0.06)", border: "1px solid var(--card-border)" }}>
+          style={{ background: "rgba(255,255,255,0.06)", border: "1px solid var(--card-border)", minHeight: 44 }}>
           <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "var(--grad-teal)" }}>
             {playing ? <Pause size={12} style={{ color: "#0D1117" }} /> : <Play size={12} style={{ color: "#0D1117", marginLeft: 1 }} />}
           </div>
@@ -272,14 +289,16 @@ export default function VoiceRecorder({ onTranscript, onError }: VoiceRecorderPr
           </span>
         </button>
 
-        <button type="button" onClick={sendVoice} className="p-2.5 rounded-full flex-shrink-0" style={{ background: "var(--grad-teal)" }}>
+        <button type="button" onClick={sendVoice}
+          className="flex items-center justify-center rounded-full flex-shrink-0"
+          style={{ background: "var(--grad-teal)", minWidth: 48, minHeight: 48, padding: 12 }}>
           <Send size={18} style={{ color: "#0D1117" }} />
         </button>
       </div>
     );
   }
 
-  // SENDING — spinner
+  // SENDING
   return (
     <div className="flex items-center gap-2 flex-1 px-3 py-2">
       <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "var(--accent)", borderTopColor: "transparent" }} />

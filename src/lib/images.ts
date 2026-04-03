@@ -38,7 +38,7 @@ export function matchFoodImage(name: string): string {
 }
 
 export const TRAINING_IMAGES: Record<string, string> = {
-  kraft: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&h=400&fit=crop",
+  kraft: "/images/kraft-mann.jpg",
   hyrox: "https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?w=800&h=400&fit=crop",
   laufen: "https://images.unsplash.com/photo-1461896836934-bd45ba1ea025?w=800&h=400&fit=crop",
   radfahren: "https://images.unsplash.com/photo-1541625602330-2277a4c46182?w=800&h=400&fit=crop",
@@ -51,7 +51,7 @@ export const TRAINING_IMAGES: Record<string, string> = {
 };
 
 const TRAINING_IMAGES_MARIA: Record<string, string> = {
-  kraft: "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=800&h=400&fit=crop",
+  kraft: "/images/kraft-frau.jpg",
   trx: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&h=400&fit=crop",
   yoga: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&h=400&fit=crop",
   laufen: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&h=400&fit=crop",

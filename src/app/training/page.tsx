@@ -18,7 +18,10 @@ import Card from "@/components/Card";
 import Toast from "@/components/Toast";
 import MuscleMap from "@/components/MuscleMap";
 import SessionStartAnimation from "@/components/SessionStartAnimation";
+import GPSTracker from "@/components/GPSTracker";
 import { AnimatePresence } from "framer-motion";
+
+const GPS_SPORTS = ["Laufen", "Radfahren", "Gravel Bike"];
 
 const TABS = ["Uebersicht", "Wochenplan", "Performance"] as const;
 type Tab = (typeof TABS)[number];
@@ -189,6 +192,7 @@ export default function TrainingPage() {
   const [timerRunning, setTimerRunning] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [showGPS, setShowGPS] = useState(false);
   const [showSessionAnim, setShowSessionAnim] = useState(false);
   const [sessionAnimSport, setSessionAnimSport] = useState("");
   const [sessionAnimImage, setSessionAnimImage] = useState("");
@@ -501,7 +505,12 @@ export default function TrainingPage() {
                         setSessionAnimSport(sport.name);
                         setSessionAnimImage(matchTrainingImage(sport.imageKey, userKey));
                         setShowSessionAnim(true);
-                        setTimeout(() => { setShowSessionAnim(false); setShowLog(true); }, 2500);
+                        const isGPS = GPS_SPORTS.includes(sport.name);
+                        setTimeout(() => {
+                          setShowSessionAnim(false);
+                          if (isGPS) { setShowGPS(true); setShowPicker(false); }
+                          else { setShowLog(true); }
+                        }, 2500);
                       }}
                       className="relative rounded-2xl overflow-hidden text-left transition-transform hover:scale-[1.02] active:scale-[0.98]"
                       style={{ height: 180 }}
@@ -682,6 +691,43 @@ export default function TrainingPage() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* GPS Tracker */}
+      {showGPS && selectedSport && (
+        <GPSTracker
+          sport={selectedSport.name}
+          userWeight={user.gewicht_kg}
+          onFinish={async (data) => {
+            setShowGPS(false);
+            setLogDauer(Math.round(data.durationSec / 60));
+            // Save directly with GPS data
+            try {
+              await fetch("/api/training", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chatId: user.id,
+                  typ: selectedSport.typ,
+                  name: selectedSport.name,
+                  dauer_min: Math.round(data.durationSec / 60),
+                  rpe: null,
+                  notizen: `${(data.distanceM / 1000).toFixed(2)} km, Pace ${Math.floor(data.paceMinKm)}:${String(Math.round((data.paceMinKm % 1) * 60)).padStart(2, "0")} /km`,
+                  route: data.route,
+                  distanz_m: data.distanceM,
+                  pace_min_km: data.paceMinKm,
+                }),
+              });
+              setSavedTyp(selectedSport.typ);
+              setSavedRpe(6);
+              setShowPostWorkout(true);
+              setToast("Training gespeichert!");
+              reload();
+            } catch { setToast("Speichern fehlgeschlagen"); }
+            setSelectedSport(null);
+          }}
+          onCancel={() => { setShowGPS(false); setSelectedSport(null); setShowPicker(false); }}
+        />
       )}
 
       {/* Session Start Animation */}

@@ -40,13 +40,13 @@ export function matchFoodImage(name: string): string {
 export const TRAINING_IMAGES: Record<string, string> = {
   kraft: "/images/kraft-mann.jpg",
   hyrox: "https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?w=800&h=400&fit=crop",
-  laufen: "https://images.unsplash.com/photo-1461896836934-bd45ba1ea025?w=800&h=400&fit=crop",
+  laufen: "/images/laufen.jpg",
   radfahren: "https://images.unsplash.com/photo-1541625602330-2277a4c46182?w=800&h=400&fit=crop",
   schwimmen: "https://images.unsplash.com/photo-1530549387789-4c1017266635?w=800&h=400&fit=crop",
   yoga: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&h=400&fit=crop",
   crossfit: "https://images.unsplash.com/photo-1534258936925-c58bed479fcb?w=800&h=400&fit=crop",
   rudern: "https://images.unsplash.com/photo-1519505907962-0a6cb0167c73?w=800&h=400&fit=crop",
-  sauna: "https://images.unsplash.com/photo-1540555700478-4be289fbec6d?w=800&h=400&fit=crop",
+  sauna: "/images/sauna.jpg",
   mobility: "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&h=400&fit=crop",
 };
 
@@ -54,7 +54,7 @@ const TRAINING_IMAGES_MARIA: Record<string, string> = {
   kraft: "/images/kraft-frau.jpg",
   trx: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&h=400&fit=crop",
   yoga: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&h=400&fit=crop",
-  laufen: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&h=400&fit=crop",
+  laufen: "/images/laufen.jpg",
   hyrox: "https://images.unsplash.com/photo-1550345332-09e3ac987658?w=800&h=400&fit=crop",
   schwimmen: "https://images.unsplash.com/photo-1560089000-7433a4ebbd64?w=800&h=400&fit=crop",
   stretching: "https://images.unsplash.com/photo-1552196563-55cd4e45efb3?w=800&h=400&fit=crop",

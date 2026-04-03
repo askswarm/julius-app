@@ -6,7 +6,9 @@ import { de } from "date-fns/locale";
 import { Dumbbell, ChevronRight, BarChart3, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { useUser } from "@/lib/UserContext";
-import { getTodayScores, getTodayMacros, getTodayTraining, getTodaySupplements, getTrainingLoad, getTodayMacroAdjustment } from "@/lib/queries";
+import { getTodayScores, getTodayMacros, getTodayTraining, getTodaySupplements, getTrainingLoad, getTodayMacroAdjustment, getTodayOura } from "@/lib/queries";
+import { Footprints, Flame, Heart } from "lucide-react";
+import { calculateDynamicKcal } from "@/lib/calorieLogic";
 import { TRAINING_SCHEDULE } from "@/lib/constants";
 import type { DailyScore, MacroSummary, TrainingEntry } from "@/lib/types";
 import FamilySwitcher from "@/components/FamilySwitcher";
@@ -32,6 +34,7 @@ export default function HomePage() {
   const [supplements, setSupplements] = useState<string[]>([]);
   const [load, setLoad] = useState(0);
   const [macroAdj, setMacroAdj] = useState({ kcal: 0, protein: 0 });
+  const [oura, setOura] = useState<{ steps?: number; active_calories?: number; resting_hr?: number; total_calories?: number } | null>(null);
 
   useEffect(() => {
     const id = user.id;
@@ -41,9 +44,10 @@ export default function HomePage() {
     getTodaySupplements(id).then(setSupplements);
     getTrainingLoad(id).then(setLoad);
     getTodayMacroAdjustment(id).then(setMacroAdj);
+    getTodayOura(id).then(setOura);
   }, [user.id]);
 
-  const adjustedKcal = user.kcal_training + macroAdj.kcal;
+  const dynamicKcal = calculateDynamicKcal(user, oura?.active_calories || 0, macroAdj.kcal);
   const adjustedProtein = user.protein_ziel_g + macroAdj.protein;
 
   const today = new Date();
@@ -70,6 +74,39 @@ export default function HomePage() {
         <ScoreRing value={Math.min(load, 1000)} max={1000} label="Load 48h" color="#F97316" />
       </Card>
 
+      {/* Oura Activity Stats */}
+      {oura && (oura.steps || oura.active_calories || oura.resting_hr) && (
+        <div className="flex gap-3 animate-fade-in stagger-1">
+          {oura.steps != null && (
+            <Card className="flex-1 flex items-center gap-2">
+              <Footprints size={16} style={{ color: "var(--accent)" }} />
+              <div>
+                <p className="text-lg font-bold" style={{ color: "var(--text)" }}>{oura.steps.toLocaleString()}</p>
+                <p className="text-[10px]" style={{ color: "var(--text3)" }}>Schritte</p>
+              </div>
+            </Card>
+          )}
+          {oura.active_calories != null && (
+            <Card className="flex-1 flex items-center gap-2">
+              <Flame size={16} style={{ color: "var(--orange)" }} />
+              <div>
+                <p className="text-lg font-bold" style={{ color: "var(--text)" }}>{oura.active_calories}</p>
+                <p className="text-[10px]" style={{ color: "var(--text3)" }}>Active kcal</p>
+              </div>
+            </Card>
+          )}
+          {oura.resting_hr != null && (
+            <Card className="flex-1 flex items-center gap-2">
+              <Heart size={16} style={{ color: "#EF4444" }} />
+              <div>
+                <p className="text-lg font-bold" style={{ color: "var(--text)" }}>{oura.resting_hr}</p>
+                <p className="text-[10px]" style={{ color: "var(--text3)" }}>Ruhepuls</p>
+              </div>
+            </Card>
+          )}
+        </div>
+      )}
+
       {/* Life Timeline */}
       <Card className="animate-fade-in stagger-2">
         <span className="text-[11px] font-semibold uppercase tracking-[1px] block mb-3" style={{ color: "var(--text2)" }}>Tagesverlauf</span>
@@ -84,8 +121,10 @@ export default function HomePage() {
         <div className="flex justify-between items-center mb-4">
           <span className="text-[11px] font-semibold uppercase tracking-[1px]" style={{ color: "var(--text2)" }}>Makros heute</span>
           <span className="text-xs font-medium" style={{ color: "var(--text3)" }}>
-            {macros.kcal} / {adjustedKcal} kcal
-            {macroAdj.kcal > 0 && <span style={{ color: "var(--accent)" }}> (+{macroAdj.kcal})</span>}
+            {macros.kcal} / {dynamicKcal.target} kcal
+            {(dynamicKcal.activityBonus > 0 || dynamicKcal.trainingBonus > 0) && (
+              <span style={{ color: "var(--accent)" }}> ({dynamicKcal.label})</span>
+            )}
           </span>
         </div>
         <div className="flex flex-col gap-3">

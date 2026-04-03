@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { Camera, MessageSquare, BookOpen, X, Check, Loader2 } from "lucide-react";
+import { Camera, X, Loader2, Sparkles } from "lucide-react";
 import { useUser } from "@/lib/UserContext";
 import { getTodayMeals, getTodayMacros } from "@/lib/queries";
+import { supabase } from "@/lib/supabase";
 import type { NutritionEntry, MacroSummary } from "@/lib/types";
 import { matchFoodImage } from "@/lib/images";
 import FamilySwitcher from "@/components/FamilySwitcher";
@@ -16,6 +17,8 @@ type Tab = (typeof TABS)[number];
 
 const MEAL_ORDER = ["fruehstueck", "mittagessen", "abendessen", "snack"];
 const MEAL_LABELS: Record<string, string> = { fruehstueck: "Fruehstueck", mittagessen: "Mittagessen", abendessen: "Abendessen", snack: "Snack" };
+const MEAL_TYPES = ["fruehstueck", "mittagessen", "abendessen", "snack", "shake"];
+const MEAL_TYPE_LABELS: Record<string, string> = { ...MEAL_LABELS, shake: "Shake" };
 
 const GRADIENTS = {
   protein: "linear-gradient(90deg, #2EA67A, #7EE2B8)",
@@ -24,14 +27,7 @@ const GRADIENTS = {
   kcal: "linear-gradient(90deg, #F97316, #FBBF24)",
 };
 
-interface AnalysisResult {
-  gericht_name: string;
-  kalorien: number;
-  protein_g: number;
-  kohlenhydrate_g: number;
-  fett_g: number;
-  ballaststoffe_g: number;
-}
+const PORTION_MULTIPLIER: Record<string, number> = { klein: 0.7, normal: 1, gross: 1.4 };
 
 function MealCard({ entry }: { entry: NutritionEntry }) {
   const imgUrl = matchFoodImage(entry.gericht_name || "");
@@ -74,15 +70,23 @@ export default function ErnaehrungPage() {
   const [meals, setMeals] = useState<NutritionEntry[]>([]);
   const [macros, setMacros] = useState<MacroSummary>({ kcal: 0, protein_g: 0, carbs_g: 0, fett_g: 0, wasser_ml: 0 });
   const [toast, setToast] = useState("");
+  const [favorites, setFavorites] = useState<{ name: string; kcal: number; protein: number }[]>([]);
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
   const [modalMealType, setModalMealType] = useState("snack");
-  const [modalMode, setModalMode] = useState<"choose" | "text" | "confirm">("choose");
-  const [textInput, setTextInput] = useState("");
-  const [pendingImage, setPendingImage] = useState<string | null>(null);
+  const [modalTab, setModalTab] = useState<"manuell" | "foto">("manuell");
+  const [gerichtName, setGerichtName] = useState("");
+  const [portion, setPortion] = useState("normal");
+  const [mKcal, setMKcal] = useState<number | "">("");
+  const [mProtein, setMProtein] = useState<number | "">("");
+  const [mCarbs, setMCarbs] = useState<number | "">("");
+  const [mFett, setMFett] = useState<number | "">("");
+  const [estimating, setEstimating] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
-  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoResult, setPhotoResult] = useState<{ name: string; kcal: number; protein: number; carbs: number; fett: number } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const reload = useCallback(() => {
@@ -92,75 +96,168 @@ export default function ErnaehrungPage() {
 
   useEffect(() => { reload(); }, [reload]);
 
+  // Load favorites (top 5 most logged meals)
+  useEffect(() => {
+    supabase
+      .from("nutrition_log")
+      .select("gericht_name, kalorien, protein_g")
+      .eq("chat_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(50)
+      .then(({ data }) => {
+        if (!data) return;
+        const counts: Record<string, { name: string; kcal: number; protein: number; count: number }> = {};
+        data.forEach((m) => {
+          const key = (m.gericht_name || "").toLowerCase();
+          if (!key) return;
+          if (!counts[key]) counts[key] = { name: m.gericht_name, kcal: m.kalorien || 0, protein: m.protein_g || 0, count: 0 };
+          counts[key].count++;
+        });
+        const sorted = Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 5);
+        setFavorites(sorted);
+      });
+  }, [user.id]);
+
   const mealsByType: Record<string, NutritionEntry[]> = {};
   meals.forEach((m) => { const t = m.mahlzeit_typ || "snack"; (mealsByType[t] ||= []).push(m); });
 
   function openModal(mealType: string) {
     setModalMealType(mealType);
-    setModalMode("choose");
-    setTextInput("");
-    setPendingImage(null);
-    setAnalysis(null);
+    setModalTab("manuell");
+    setGerichtName("");
+    setPortion("normal");
+    setMKcal("");
+    setMProtein("");
+    setMCarbs("");
+    setMFett("");
+    setPhotoPreview(null);
+    setPhotoResult(null);
     setShowModal(true);
   }
 
-  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function estimateMacros() {
+    if (!gerichtName.trim()) return;
+    setEstimating(true);
+    try {
+      const res = await fetch("/api/nutrition", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: gerichtName, chatId: user.id, mode: "estimate" }),
+      });
+      const data = await res.json();
+      if (data.success && data.analysis) {
+        const mult = PORTION_MULTIPLIER[portion] || 1;
+        setMKcal(Math.round((data.analysis.kalorien || 0) * mult));
+        setMProtein(Math.round((data.analysis.protein_g || 0) * mult));
+        setMCarbs(Math.round((data.analysis.kohlenhydrate_g || 0) * mult));
+        setMFett(Math.round((data.analysis.fett_g || 0) * mult));
+        if (data.analysis.gericht_name && !gerichtName.trim()) setGerichtName(data.analysis.gericht_name);
+      }
+    } catch { /* ignore */ }
+    setEstimating(false);
+  }
+
+  async function saveManual() {
+    if (!gerichtName.trim()) return;
+    setSaving(true);
+    try {
+      const mult = PORTION_MULTIPLIER[portion] || 1;
+      const res = await fetch("/api/nutrition", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chatId: user.id,
+          mealType: modalMealType,
+          mode: "manual",
+          manualData: {
+            gericht_name: gerichtName,
+            kalorien: Math.round((Number(mKcal) || 0) * (mKcal ? 1 : mult)),
+            protein_g: Math.round((Number(mProtein) || 0) * (mProtein ? 1 : mult)),
+            kohlenhydrate_g: Math.round((Number(mCarbs) || 0) * (mCarbs ? 1 : mult)),
+            fett_g: Math.round((Number(mFett) || 0) * (mFett ? 1 : mult)),
+          },
+        }),
+      });
+      if (res.ok) {
+        setShowModal(false);
+        setToast("Mahlzeit gespeichert!");
+        reload();
+      }
+    } catch { setToast("Fehler beim Speichern"); }
+    setSaving(false);
+  }
+
+  async function quickAddFavorite(fav: { name: string; kcal: number; protein: number }) {
+    setSaving(true);
+    try {
+      await fetch("/api/nutrition", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chatId: user.id,
+          mealType: modalMealType || "snack",
+          mode: "manual",
+          manualData: { gericht_name: fav.name, kalorien: fav.kcal, protein_g: fav.protein, kohlenhydrate_g: 0, fett_g: 0 },
+        }),
+      });
+      setShowModal(false);
+      setToast(`${fav.name} geloggt!`);
+      reload();
+    } catch { /* ignore */ }
+    setSaving(false);
+  }
+
+  function onPhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      setPendingImage(reader.result as string);
-      analyzeFood(undefined, reader.result as string);
+      setPhotoPreview(reader.result as string);
+      analyzePhoto(reader.result as string);
     };
     reader.readAsDataURL(file);
     e.target.value = "";
   }
 
-  async function analyzeFood(text?: string, image?: string) {
+  async function analyzePhoto(base64: string) {
     setAnalyzing(true);
-    setModalMode("confirm");
-
+    setPhotoResult(null);
     try {
       const res = await fetch("/api/nutrition", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: text || undefined,
-          image: image || undefined,
-          chatId: user.id,
-          mealType: modalMealType,
-        }),
+        body: JSON.stringify({ image: base64, chatId: user.id, mealType: modalMealType }),
       });
-
       const data = await res.json();
       if (data.success && data.analysis) {
-        setAnalysis(data.analysis);
+        setPhotoResult({
+          name: data.analysis.gericht_name || "Unbekannt",
+          kcal: data.analysis.kalorien || 0,
+          protein: data.analysis.protein_g || 0,
+          carbs: data.analysis.kohlenhydrate_g || 0,
+          fett: data.analysis.fett_g || 0,
+        });
         setShowModal(false);
         setToast("Mahlzeit gespeichert!");
         reload();
       } else {
-        setAnalysis(null);
         setToast(data.error || "Analyse fehlgeschlagen");
-        setShowModal(false);
       }
-    } catch {
-      setToast("Verbindungsfehler");
-      setShowModal(false);
-    } finally {
-      setAnalyzing(false);
-    }
+    } catch { setToast("Verbindungsfehler"); }
+    setAnalyzing(false);
   }
+
+  const inputStyle = { background: "var(--input-bg)", color: "var(--input-text)", borderColor: "var(--input-border)" };
 
   return (
     <div className="flex flex-col gap-4">
-      <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFileChange} />
+      <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onPhotoChange} />
 
       <div className="flex items-center justify-between animate-fade-in">
         <h1 className="text-xl font-bold">Ernaehrung</h1>
         <FamilySwitcher />
       </div>
 
-      {/* Tabs */}
       <div className="flex rounded-xl p-1 gap-1" style={{ background: "var(--subtle-bg)" }}>
         {TABS.map((t) => (
           <button key={t} onClick={() => setTab(t)}
@@ -177,11 +274,7 @@ export default function ErnaehrungPage() {
           {MEAL_ORDER.map((type) => {
             const entries = mealsByType[type];
             if (entries?.length) {
-              return (
-                <div key={type}>
-                  {entries.map((e) => <MealCard key={e.id} entry={e} />)}
-                </div>
-              );
+              return <div key={type}>{entries.map((e) => <MealCard key={e.id} entry={e} />)}</div>;
             }
             return (
               <button key={type} onClick={() => openModal(type)}
@@ -214,76 +307,157 @@ export default function ErnaehrungPage() {
 
       {/* Meal Log Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
-          <div className="w-full max-w-lg rounded-t-3xl p-6" style={{ background: "var(--card)", maxHeight: "80vh", overflowY: "auto", paddingBottom: "max(24px, env(safe-area-inset-bottom))" }}>
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-sm font-semibold" style={{ color: "var(--text)" }}>
-                {MEAL_LABELS[modalMealType] || "Mahlzeit"} hinzufuegen
-              </h3>
-              <button onClick={() => setShowModal(false)} style={{ color: "var(--text3)" }}>
-                <X size={20} />
+        <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: "var(--overlay)", backdropFilter: "blur(4px)" }}>
+          <div className="w-full max-w-lg rounded-t-3xl p-6" style={{ background: "var(--card)", maxHeight: "90vh", overflowY: "auto", paddingBottom: "max(24px, env(safe-area-inset-bottom))" }}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold" style={{ color: "var(--text)" }}>Mahlzeit hinzufuegen</h3>
+              <button onClick={() => setShowModal(false)} style={{ color: "var(--text3)" }}><X size={20} /></button>
+            </div>
+
+            {/* Meal type pills */}
+            <div className="flex gap-1 mb-4 overflow-x-auto">
+              {MEAL_TYPES.map((mt) => (
+                <button key={mt} onClick={() => setModalMealType(mt)}
+                  className="px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all"
+                  style={{
+                    background: modalMealType === mt ? "var(--accent)" : "var(--subtle-bg)",
+                    color: modalMealType === mt ? "#0D1117" : "var(--text3)",
+                  }}>
+                  {MEAL_TYPE_LABELS[mt] || mt}
+                </button>
+              ))}
+            </div>
+
+            {/* Manuell / Foto tabs */}
+            <div className="flex rounded-xl p-1 gap-1 mb-4" style={{ background: "var(--subtle-bg)" }}>
+              <button onClick={() => setModalTab("manuell")}
+                className="flex-1 py-2 text-xs rounded-lg font-medium transition-all"
+                style={{ background: modalTab === "manuell" ? "var(--card)" : "transparent", color: modalTab === "manuell" ? "var(--text)" : "var(--text3)" }}>
+                Manuell
+              </button>
+              <button onClick={() => setModalTab("foto")}
+                className="flex-1 py-2 text-xs rounded-lg font-medium transition-all"
+                style={{ background: modalTab === "foto" ? "var(--card)" : "transparent", color: modalTab === "foto" ? "var(--text)" : "var(--text3)" }}>
+                Foto
               </button>
             </div>
 
-            {modalMode === "choose" && (
+            {modalTab === "manuell" && (
               <div className="flex flex-col gap-3">
-                <button onClick={() => fileRef.current?.click()}
-                  className="flex items-center gap-3 p-4 rounded-2xl transition-all hover:scale-[1.01]"
-                  style={{ background: "rgba(126,226,184,0.08)", border: "1px solid var(--card-border)" }}>
-                  <Camera size={24} style={{ color: "var(--accent)" }} />
-                  <div className="text-left">
-                    <p className="text-sm font-medium" style={{ color: "var(--text)" }}>Foto</p>
-                    <p className="text-xs" style={{ color: "var(--text3)" }}>Kamera oder Galerie</p>
+                {/* Favorites */}
+                {favorites.length > 0 && (
+                  <div>
+                    <p className="text-[10px] mb-1.5" style={{ color: "var(--text3)" }}>Letzte Gerichte</p>
+                    <div className="flex gap-1.5 overflow-x-auto pb-1">
+                      {favorites.map((f, i) => (
+                        <button key={i} onClick={() => quickAddFavorite(f)}
+                          className="px-3 py-1.5 rounded-full text-[10px] font-medium whitespace-nowrap transition-all"
+                          style={{ background: "var(--subtle-bg)", color: "var(--text2)", border: "1px solid var(--card-border)" }}>
+                          {f.name} ({f.kcal} kcal)
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </button>
+                )}
 
-                <button onClick={() => setModalMode("text")}
-                  className="flex items-center gap-3 p-4 rounded-2xl transition-all hover:scale-[1.01]"
-                  style={{ background: "rgba(121,192,255,0.08)", border: "1px solid var(--card-border)" }}>
-                  <MessageSquare size={24} style={{ color: "var(--accent2)" }} />
-                  <div className="text-left">
-                    <p className="text-sm font-medium" style={{ color: "var(--text)" }}>Text</p>
-                    <p className="text-xs" style={{ color: "var(--text3)" }}>Beschreibe dein Essen</p>
+                {/* Name */}
+                <input value={gerichtName} onChange={(e) => setGerichtName(e.target.value)}
+                  placeholder="z.B. Omelette mit Feta"
+                  className="w-full px-4 py-3 rounded-2xl text-sm border" style={inputStyle} />
+
+                {/* Portion */}
+                <div>
+                  <p className="text-[10px] mb-1.5" style={{ color: "var(--text3)" }}>Portionsgroesse</p>
+                  <div className="flex gap-2">
+                    {(["klein", "normal", "gross"] as const).map((p) => (
+                      <button key={p} onClick={() => setPortion(p)}
+                        className="flex-1 py-2 rounded-xl text-xs font-medium transition-all"
+                        style={{
+                          background: portion === p ? "var(--accent)" : "var(--subtle-bg)",
+                          color: portion === p ? "#0D1117" : "var(--text3)",
+                          border: `1px solid ${portion === p ? "var(--accent)" : "var(--card-border)"}`,
+                        }}>
+                        {p.charAt(0).toUpperCase() + p.slice(1)}
+                      </button>
+                    ))}
                   </div>
-                </button>
+                </div>
 
-                <button className="flex items-center gap-3 p-4 rounded-2xl opacity-50"
-                  style={{ background: "rgba(249,115,22,0.08)", border: "1px solid var(--card-border)" }}>
-                  <BookOpen size={24} style={{ color: "var(--orange)" }} />
-                  <div className="text-left">
-                    <p className="text-sm font-medium" style={{ color: "var(--text)" }}>Aus Wochenplan</p>
-                    <p className="text-xs" style={{ color: "var(--text3)" }}>Kommt bald</p>
+                {/* Macros */}
+                <div className="grid grid-cols-4 gap-2">
+                  <div>
+                    <label className="text-[10px]" style={{ color: "var(--text3)" }}>kcal</label>
+                    <input type="number" value={mKcal} onChange={(e) => setMKcal(e.target.value ? Number(e.target.value) : "")}
+                      placeholder="—" className="w-full mt-0.5 px-2 py-2 rounded-xl text-sm text-center border" style={inputStyle} />
                   </div>
-                </button>
-              </div>
-            )}
+                  <div>
+                    <label className="text-[10px]" style={{ color: "var(--text3)" }}>Protein</label>
+                    <input type="number" value={mProtein} onChange={(e) => setMProtein(e.target.value ? Number(e.target.value) : "")}
+                      placeholder="—" className="w-full mt-0.5 px-2 py-2 rounded-xl text-sm text-center border" style={inputStyle} />
+                  </div>
+                  <div>
+                    <label className="text-[10px]" style={{ color: "var(--text3)" }}>Carbs</label>
+                    <input type="number" value={mCarbs} onChange={(e) => setMCarbs(e.target.value ? Number(e.target.value) : "")}
+                      placeholder="—" className="w-full mt-0.5 px-2 py-2 rounded-xl text-sm text-center border" style={inputStyle} />
+                  </div>
+                  <div>
+                    <label className="text-[10px]" style={{ color: "var(--text3)" }}>Fett</label>
+                    <input type="number" value={mFett} onChange={(e) => setMFett(e.target.value ? Number(e.target.value) : "")}
+                      placeholder="—" className="w-full mt-0.5 px-2 py-2 rounded-xl text-sm text-center border" style={inputStyle} />
+                  </div>
+                </div>
 
-            {modalMode === "text" && (
-              <div className="flex flex-col gap-3">
-                <textarea
-                  value={textInput}
-                  onChange={(e) => setTextInput(e.target.value)}
-                  placeholder="z.B. Griechischer Joghurt mit Honig und Walnuessen, ca. 250g"
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-2xl bg-transparent border text-sm resize-none"
-                  style={{ borderColor: "var(--card-border)", color: "var(--text)" }}
-                  autoFocus
-                />
-                <button
-                  onClick={() => analyzeFood(textInput)}
-                  disabled={!textInput.trim()}
+                {/* Estimate button */}
+                {gerichtName.trim() && !mKcal && (
+                  <button onClick={estimateMacros} disabled={estimating}
+                    className="flex items-center justify-center gap-2 py-2.5 rounded-2xl text-xs font-medium transition-all"
+                    style={{ background: "var(--subtle-bg)", color: "var(--accent)", border: "1px solid var(--card-border)" }}>
+                    {estimating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                    {estimating ? "Wird geschaetzt..." : "Makros schaetzen lassen"}
+                  </button>
+                )}
+
+                {/* Save */}
+                <button onClick={saveManual} disabled={saving || !gerichtName.trim()}
                   className="w-full py-3 rounded-2xl text-sm font-semibold transition-all"
-                  style={{ background: textInput.trim() ? "var(--grad-teal)" : "var(--text3)", color: "#0D1117" }}
-                >
-                  Analysieren
+                  style={{ background: gerichtName.trim() ? "var(--grad-teal)" : "var(--text3)", color: "#0D1117" }}>
+                  {saving ? "Speichern..." : "Mahlzeit speichern"}
                 </button>
               </div>
             )}
 
-            {modalMode === "confirm" && analyzing && (
-              <div className="flex flex-col items-center gap-3 py-8">
-                <Loader2 size={32} className="animate-spin" style={{ color: "var(--accent)" }} />
-                <p className="text-sm" style={{ color: "var(--text2)" }}>Claude analysiert...</p>
+            {modalTab === "foto" && (
+              <div className="flex flex-col gap-3 items-center">
+                {!photoPreview ? (
+                  <button onClick={() => fileRef.current?.click()}
+                    className="w-full py-12 rounded-2xl flex flex-col items-center gap-3 transition-all"
+                    style={{ background: "var(--subtle-bg)", border: "2px dashed var(--card-border)" }}>
+                    <Camera size={32} style={{ color: "var(--accent)" }} />
+                    <p className="text-sm font-medium" style={{ color: "var(--text)" }}>Foto aufnehmen oder waehlen</p>
+                    <p className="text-xs" style={{ color: "var(--text3)" }}>Claude analysiert automatisch</p>
+                  </button>
+                ) : (
+                  <div className="w-full">
+                    <img src={photoPreview} alt="" className="w-full h-48 object-cover rounded-2xl mb-3" />
+                    {analyzing ? (
+                      <div className="flex items-center justify-center gap-2 py-4">
+                        <Loader2 size={20} className="animate-spin" style={{ color: "var(--accent)" }} />
+                        <span className="text-sm" style={{ color: "var(--text2)" }}>Claude analysiert...</span>
+                      </div>
+                    ) : photoResult ? (
+                      <div className="text-center py-2">
+                        <p className="text-sm font-medium" style={{ color: "var(--accent)" }}>Erkannt: {photoResult.name}</p>
+                        <p className="text-xs mt-1" style={{ color: "var(--text2)" }}>
+                          {photoResult.kcal} kcal | {photoResult.protein}g P | {photoResult.carbs}g KH | {photoResult.fett}g F
+                        </p>
+                      </div>
+                    ) : null}
+                    <button onClick={() => { setPhotoPreview(null); setPhotoResult(null); }}
+                      className="w-full py-2 text-xs" style={{ color: "var(--text3)" }}>
+                      Anderes Foto waehlen
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

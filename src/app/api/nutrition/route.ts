@@ -7,12 +7,60 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, image, chatId, mealType } = await req.json();
+    const { text, image, chatId, mealType, mode, manualData } = await req.json();
 
     const userKey = Object.entries(USERS).find(([, u]) => u.id === chatId)?.[0] || "vincent";
     const user = USERS[userKey];
     const datum = new Date().toISOString().split("T")[0];
 
+    // Mode: manual — direct save with provided data
+    if (mode === "manual" && manualData) {
+      const { data, error } = await supabaseServer
+        .from("nutrition_log")
+        .insert({
+          chat_id: chatId,
+          datum,
+          mahlzeit_typ: mealType || "snack",
+          gericht_name: manualData.gericht_name || "Unbekannt",
+          kalorien: manualData.kalorien || 0,
+          protein_g: manualData.protein_g || 0,
+          kohlenhydrate_g: manualData.kohlenhydrate_g || 0,
+          fett_g: manualData.fett_g || 0,
+          ballaststoffe_g: manualData.ballaststoffe_g || 0,
+          quelle: "app_manual",
+        })
+        .select()
+        .single();
+
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ success: true, meal: data, analysis: manualData });
+    }
+
+    // Mode: estimate — Claude estimates macros from text, no save
+    if (mode === "estimate" && text) {
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 256,
+        messages: [{
+          role: "user",
+          content: `Schaetze die Naehrwerte fuer: "${text}"
+User: ${user.name}, Ziele: ${user.protein_ziel_g}g Protein/Tag.
+Antworte NUR als JSON: {"gericht_name": "...", "kalorien": 0, "protein_g": 0, "kohlenhydrate_g": 0, "fett_g": 0, "ballaststoffe_g": 0}`,
+        }],
+      });
+
+      const responseText = response.content
+        .filter((b): b is Anthropic.TextBlock => b.type === "text")
+        .map((b) => b.text)
+        .join("");
+
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) return NextResponse.json({ error: "Schaetzung fehlgeschlagen" }, { status: 422 });
+
+      return NextResponse.json({ success: true, analysis: JSON.parse(jsonMatch[0]), estimated: true });
+    }
+
+    // Default: analyze (image or text) + save
     const content: Anthropic.ContentBlockParam[] = [];
 
     if (image) {
@@ -48,7 +96,6 @@ Antworte NUR mit dem JSON, keine Erklaerung.`,
       .map((b) => b.text)
       .join("");
 
-    // Parse JSON from response
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       return NextResponse.json({ error: "Konnte Naehrwerte nicht analysieren", raw: responseText }, { status: 422 });
@@ -56,7 +103,6 @@ Antworte NUR mit dem JSON, keine Erklaerung.`,
 
     const analysis = JSON.parse(jsonMatch[0]);
 
-    // Save to nutrition_log
     const { data, error } = await supabaseServer
       .from("nutrition_log")
       .insert({

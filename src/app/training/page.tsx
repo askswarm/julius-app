@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { format, startOfWeek, addDays } from "date-fns";
 import { de } from "date-fns/locale";
 import {
   Dumbbell, Bike, Flame, Waves, Timer, CheckCircle2, Plus, X,
-  Footprints, Ship, Zap, Flower2, Thermometer, StretchHorizontal,
+  Footprints, Ship, Zap, Flower2, Thermometer, StretchHorizontal, Camera, Loader2,
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { useUser } from "@/lib/UserContext";
@@ -183,6 +183,8 @@ export default function TrainingPage() {
   const [showPostWorkout, setShowPostWorkout] = useState(false);
   const [savedTyp, setSavedTyp] = useState("");
   const [savedRpe, setSavedRpe] = useState(6);
+  const [analyzingPhoto, setAnalyzingPhoto] = useState(false);
+  const photoRef = useRef<HTMLInputElement>(null);
 
   const reload = useCallback(() => {
     getTodayTraining(user.id).then(setTodayTraining);
@@ -244,6 +246,38 @@ export default function TrainingPage() {
     const updated = [...exercises];
     (updated[idx] as unknown as Record<string, string | number>)[field] = value;
     setExercises(updated);
+  }
+
+  async function analyzeWorkoutPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      setAnalyzingPhoto(true);
+      try {
+        const res = await fetch("/api/training/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: reader.result }),
+        });
+        const data = await res.json();
+        if (data.success && data.analysis) {
+          const a = data.analysis;
+          if (a.dauer_min) setLogDauer(a.dauer_min);
+          if (a.rpe) setLogRpe(a.rpe);
+          if (a.uebungen?.length) {
+            setExercises(a.uebungen.map((u: { name: string; saetze?: number; wdh?: number; gewicht?: number }) => ({
+              name: u.name || "", saetze: u.saetze || 3, wdh: u.wdh || 10, gewicht: u.gewicht || 0,
+            })));
+          }
+          setToast("Workout-Foto analysiert!");
+        }
+      } catch { /* ignore */ }
+      setAnalyzingPhoto(false);
+    };
+    reader.readAsDataURL(file);
   }
 
   // Chart data
@@ -480,6 +514,15 @@ export default function TrainingPage() {
               <selectedSport.icon size={24} style={{ color: TYPE_COLORS[selectedSport.typ] || "var(--accent)" }} />
               <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>{selectedSport.name}</h2>
             </div>
+
+            {/* Workout Photo */}
+            <input ref={photoRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={analyzeWorkoutPhoto} />
+            <button type="button" onClick={() => photoRef.current?.click()} disabled={analyzingPhoto}
+              className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl mb-3 text-sm font-medium transition-all"
+              style={{ background: "var(--subtle-bg)", border: "1px solid var(--card-border)", color: "var(--text2)" }}>
+              {analyzingPhoto ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
+              {analyzingPhoto ? "Analysiere Foto..." : "Workout-Foto analysieren"}
+            </button>
 
             {/* Duration */}
             <Card className="mb-3">

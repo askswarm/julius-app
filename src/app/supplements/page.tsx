@@ -13,7 +13,7 @@ import SupplementAdvisor from "@/components/SupplementAdvisor";
 import AdaptationsCard from "@/components/AdaptationsCard";
 import PeptideTracker from "@/components/PeptideTracker";
 
-const TABS = ["Tagesplan", "Mein Stack", "Blutwerte"] as const;
+const TABS = ["Tagesplan", "Protokolle", "Blutwerte"] as const;
 type Tab = (typeof TABS)[number];
 
 const TRT_DAYS = [3, 6];
@@ -185,31 +185,60 @@ export default function SupplementsPage() {
         </div>
       )}
 
-      {tab === "Mein Stack" && (
+      {tab === "Protokolle" && (
         <div className="flex flex-col gap-4">
-          {categories.map((cat) => (
-            <div key={cat}>
-              <h3 className="text-xs uppercase tracking-wider text-slate-400 mb-2 px-1">{cat}</h3>
-              <div className="flex flex-col gap-2">
+          {/* TRT (Vincent only) */}
+          {userKey === "vincent" && (
+            <Card className="border-l-[3px] border-orange-400">
+              <div className="flex items-center gap-2 mb-3">
+                <Syringe size={16} style={{ color: "#F97316" }} />
+                <p className="text-sm font-semibold" style={{ color: "var(--text)" }}>TRT Protokoll</p>
+              </div>
+              <div className="text-sm flex flex-col gap-1.5" style={{ color: "var(--text2)" }}>
+                <div className="flex justify-between"><span>Dosis</span><span style={{ color: "var(--text)" }}>120mg/Woche (2x 60mg)</span></div>
+                <div className="flex justify-between"><span>Naechste Injektion</span><span style={{ color: "var(--text)" }}>
+                  {(() => {
+                    const now = new Date();
+                    const day = now.getDay();
+                    const nextTrt = day <= 3 ? 3 - day : day <= 6 ? 6 - day : 3 + 7 - day;
+                    const nextDate = new Date(now.getTime() + nextTrt * 86400000);
+                    return nextTrt === 0 ? "Heute" : nextDate.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "short" });
+                  })()}
+                </span></div>
+                <div className="flex justify-between"><span>Schema</span><span style={{ color: "var(--text)" }}>Mi + Sa, SubQ</span></div>
+              </div>
+              {isTrtDay && (
+                <div className="mt-3 flex items-center gap-2 py-2 px-3 rounded-xl" style={{ background: "rgba(249,115,22,0.08)" }}>
+                  <Syringe size={14} style={{ color: "#F97316" }} />
+                  <span className="text-xs font-medium" style={{ color: "#F97316" }}>Heute: Injektionstag — 0.2ml</span>
+                </div>
+              )}
+            </Card>
+          )}
+
+          {/* Peptides */}
+          <PeptideTracker />
+
+          {/* Supplement Advisor */}
+          <SupplementAdvisor />
+
+          {/* Full Stack Reference */}
+          <Card>
+            <p className="text-[11px] font-semibold uppercase tracking-[1px] mb-3" style={{ color: "var(--text2)" }}>Vollstaendiger Stack</p>
+            {categories.map((cat) => (
+              <div key={cat} className="mb-3">
+                <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: "var(--text3)" }}>{cat}</p>
                 {SUPPLEMENT_STACK.filter(s => s.kategorie === cat && (!s.nur_maria || userKey === "maria")).map((s) => (
-                  <Card key={s.name} className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{s.name}</p>
-                      <p className="text-xs text-slate-500">{s.dosis} · {s.produkt}</p>
-                      <p className="text-[10px] text-slate-400 mt-1">{s.warum}</p>
-                    </div>
-                    <span className="text-xs text-slate-400 whitespace-nowrap">{s.preis_monat} EUR</span>
-                  </Card>
+                  <div key={s.name} className="flex justify-between py-1">
+                    <span className="text-xs" style={{ color: "var(--text)" }}>{s.name} — {s.dosis}</span>
+                    <span className="text-[10px]" style={{ color: "var(--text3)" }}>{s.preis_monat} EUR</span>
+                  </div>
                 ))}
               </div>
+            ))}
+            <div className="pt-2 mt-2" style={{ borderTop: "1px solid var(--card-border)" }}>
+              <p className="text-xs font-medium" style={{ color: "var(--accent)" }}>Monatskosten: ~{monthlyCost} EUR</p>
             </div>
-          ))}
-
-          <Card className="bg-blue-50 dark:bg-blue-950">
-            <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Monatskosten: ~{monthlyCost} EUR</p>
-            <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-              Sunday Natural, APOrtha, Supplera PUR, Kaneka
-            </p>
           </Card>
         </div>
       )}

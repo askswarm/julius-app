@@ -227,10 +227,10 @@ export default function ChatPage() {
       )}
 
       {/* Input */}
-      <div className="px-3 py-3 flex items-end gap-2" style={{ background: "rgba(22,27,34,0.95)", borderTop: "1px solid var(--card-border)", backdropFilter: "blur(20px)" }}>
+      <div className="px-3 pt-3 flex items-end gap-2" style={{ background: "rgba(22,27,34,0.95)", borderTop: "1px solid var(--card-border)", backdropFilter: "blur(20px)", paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
         <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFileChange} />
 
-        <button onClick={handlePhoto} className="p-2.5 rounded-full transition-colors" style={{ color: "var(--text2)" }}>
+        <button onClick={handlePhoto} className="p-2.5 rounded-full transition-colors flex-shrink-0" style={{ color: "var(--text2)" }}>
           <Camera size={22} />
         </button>
 
@@ -242,18 +242,18 @@ export default function ChatPage() {
             placeholder="Frag Julius..."
             rows={1}
             className="flex-1 bg-transparent text-sm resize-none outline-none max-h-32"
-            style={{ color: "var(--text)" }}
+            style={{ color: "var(--text)", fontSize: "16px" }}
           />
         </div>
 
         <button onClick={toggleRecording}
-          className="p-2.5 rounded-full transition-colors"
+          className="p-2.5 rounded-full transition-colors flex-shrink-0"
           style={{ color: recording ? "#EF4444" : "var(--text2)" }}>
           {recording ? <MicOff size={22} /> : <Mic size={22} />}
         </button>
 
         {(input.trim() || pendingImage) && (
-          <button onClick={() => sendMessage()} className="p-2.5 rounded-full" style={{ background: "var(--grad-teal)" }}>
+          <button onClick={() => sendMessage()} className="p-2.5 rounded-full flex-shrink-0" style={{ background: "var(--grad-teal)" }}>
             <Send size={18} style={{ color: "#0D1117" }} />
           </button>
         )}

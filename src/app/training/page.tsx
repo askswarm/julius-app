@@ -464,7 +464,7 @@ export default function TrainingPage() {
       {/* Log Screen */}
       {showLog && selectedSport && (
         <div className="fixed inset-0 z-50 flex flex-col overflow-y-auto" style={{ background: "#0D1117" }}>
-          <div className="max-w-lg mx-auto px-4 py-6 w-full">
+          <div className="max-w-lg mx-auto px-4 py-6 w-full" style={{ paddingBottom: "max(24px, env(safe-area-inset-bottom))" }}>
             {/* Header */}
             <div className="flex items-center gap-3 mb-6">
               <button onClick={() => { setShowLog(false); setSelectedSport(null); }} className="p-1" style={{ color: "var(--text2)" }}>

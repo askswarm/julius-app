@@ -15,11 +15,15 @@ const tabs = [
 
 export default function BottomNav() {
   const path = usePathname();
+
+  // Hide on chat page — chat has its own full-screen layout
+  if (path === "/chat") return null;
+
   return (
     <>
       {/* Mobile */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
-        style={{ background: "rgba(13,17,23,0.85)", backdropFilter: "blur(20px)", borderTop: "1px solid var(--card-border)" }}>
+      <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden"
+        style={{ background: "rgba(13,17,23,0.85)", backdropFilter: "blur(20px)", borderTop: "1px solid var(--card-border)", paddingBottom: "env(safe-area-inset-bottom)" }}>
         <div className="flex justify-around py-2.5">
           {tabs.map((t) => {
             const active = path === t.href;
@@ -36,7 +40,7 @@ export default function BottomNav() {
       </nav>
 
       {/* Desktop Sidebar */}
-      <nav className="hidden md:flex md:fixed md:left-0 md:top-0 md:h-full md:w-[72px] md:flex-col md:items-center md:gap-1 md:py-6 md:z-50"
+      <nav className="hidden md:flex md:fixed md:left-0 md:top-0 md:h-full md:w-[72px] md:flex-col md:items-center md:gap-1 md:py-6 md:z-40"
         style={{ background: "rgba(13,17,23,0.9)", backdropFilter: "blur(20px)", borderRight: "1px solid var(--card-border)" }}>
         <div className="w-10 h-10 rounded-xl mb-6 flex items-center justify-center text-lg font-bold"
           style={{ background: "var(--grad-teal)", color: "#0D1117" }}>J</div>

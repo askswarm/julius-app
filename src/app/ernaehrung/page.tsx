@@ -215,7 +215,7 @@ export default function ErnaehrungPage() {
       {/* Meal Log Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
-          <div className="w-full max-w-lg rounded-t-3xl p-6" style={{ background: "#161B22", maxHeight: "80vh", overflowY: "auto" }}>
+          <div className="w-full max-w-lg rounded-t-3xl p-6" style={{ background: "#161B22", maxHeight: "80vh", overflowY: "auto", paddingBottom: "max(24px, env(safe-area-inset-bottom))" }}>
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-sm font-semibold" style={{ color: "var(--text)" }}>
                 {MEAL_LABELS[modalMealType] || "Mahlzeit"} hinzufuegen

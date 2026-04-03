@@ -24,7 +24,11 @@ const GRADIENTS = {
   wasser: "linear-gradient(90deg, #0284C7, #38BDF8)",
 };
 
-const HOME_HEROES: Record<string, string> = {
+const HOME_VIDEOS: Record<string, string> = {
+  vincent: "https://videos.pexels.com/video-files/4761437/4761437-uhd_2560_1440_25fps.mp4",
+  maria: "https://videos.pexels.com/video-files/4761568/4761568-uhd_2560_1440_25fps.mp4",
+};
+const HOME_POSTERS: Record<string, string> = {
   vincent: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=1200&h=600&fit=crop",
   maria: "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=1200&h=600&fit=crop",
 };
@@ -84,10 +88,19 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col gap-4 -mx-4 -mt-5">
-      {/* ZONE 1 — HERO */}
-      <div className="relative overflow-hidden" style={{ height: 220 }}>
-        <img src={HOME_HEROES[userKey] || HOME_HEROES.vincent} alt=""
-          className="absolute inset-0 w-full h-full object-cover ken-burns" />
+      {/* ZONE 1 — HERO with video */}
+      <div className="relative overflow-hidden" style={{ height: 300 }}>
+        <video
+          autoPlay loop muted playsInline
+          poster={HOME_POSTERS[userKey] || HOME_POSTERS.vincent}
+          className="absolute inset-0 w-full h-full object-cover"
+          onError={(e) => { (e.target as HTMLVideoElement).style.display = "none"; }}
+        >
+          <source src={HOME_VIDEOS[userKey] || HOME_VIDEOS.vincent} type="video/mp4" />
+        </video>
+        {/* Static fallback behind video */}
+        <img src={HOME_POSTERS[userKey] || HOME_POSTERS.vincent} alt=""
+          className="absolute inset-0 w-full h-full object-cover -z-10" />
         <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, var(--bg) 100%)" }} />
         <div className="relative h-full px-5 flex flex-col justify-between" style={{ paddingTop: "max(16px, env(safe-area-inset-top))" }}>
           {/* Top bar */}

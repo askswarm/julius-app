@@ -16,21 +16,34 @@ const tabs = [
 export default function BottomNav() {
   const path = usePathname();
   const isChat = path === "/chat";
+  const activeIdx = tabs.findIndex((t) => t.href === path);
 
   return (
     <>
       {!isChat && (
         <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden"
           style={{ background: "var(--nav-bg)", backdropFilter: "blur(20px)", borderTop: "1px solid var(--nav-border)", paddingBottom: "env(safe-area-inset-bottom)" }}>
-          <div className="flex justify-around py-2.5">
+          <div className="flex justify-around py-1.5 relative">
+            {/* Sliding indicator */}
+            {activeIdx >= 0 && (
+              <div className="absolute top-0 h-0.5 rounded-full transition-all duration-300 ease-out"
+                style={{
+                  background: "var(--nav-active)",
+                  width: `${100 / tabs.length}%`,
+                  left: `${(activeIdx / tabs.length) * 100}%`,
+                }} />
+            )}
             {tabs.map((t) => {
               const active = path === t.href;
               return (
                 <Link key={t.href} href={t.href}
-                  className="flex flex-col items-center gap-0.5 px-2 py-0.5 relative">
-                  {active && <div className="absolute -top-1 w-1 h-1 rounded-full" style={{ background: "var(--nav-active)" }} />}
-                  <t.icon size={20} style={{ color: active ? "var(--nav-active)" : "var(--nav-inactive)" }} />
-                  <span className="text-[10px] font-medium" style={{ color: active ? "var(--nav-active)" : "var(--nav-inactive)" }}>{t.label}</span>
+                  className="flex flex-col items-center gap-0.5 px-2 py-1 relative transition-all duration-200"
+                  style={{ transform: active ? "translateY(-2px)" : "translateY(0)" }}>
+                  <t.icon size={active ? 22 : 20} style={{ color: active ? "var(--nav-active)" : "var(--nav-inactive)", transition: "all 0.2s ease" }} />
+                  <span className="font-medium transition-all duration-200"
+                    style={{ color: active ? "var(--nav-active)" : "var(--nav-inactive)", fontSize: active ? 10 : 9, opacity: active ? 1 : 0.7 }}>
+                    {t.label}
+                  </span>
                 </Link>
               );
             })}
@@ -46,7 +59,7 @@ export default function BottomNav() {
           const active = path === t.href;
           return (
             <Link key={t.href} href={t.href}
-              className="flex flex-col items-center gap-1 w-14 py-2.5 rounded-xl transition-all relative"
+              className="flex flex-col items-center gap-1 w-14 py-2.5 rounded-xl transition-all duration-200 relative"
               style={{
                 background: active ? "rgba(126,226,184,0.08)" : "transparent",
                 borderLeft: active ? "2px solid var(--nav-active)" : "2px solid transparent",

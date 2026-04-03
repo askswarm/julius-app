@@ -25,7 +25,7 @@ function ToggleButton({ active, label, onClick }: { active: boolean; label: stri
   return (
     <button onClick={onClick} className="px-3 py-1.5 rounded-full text-xs font-medium transition-all"
       style={{
-        background: active ? "rgba(126,226,184,0.15)" : "rgba(255,255,255,0.04)",
+        background: active ? "rgba(126,226,184,0.15)" : "var(--subtle-bg)",
         color: active ? "var(--accent)" : "var(--text3)",
         border: `1px solid ${active ? "var(--accent)" : "var(--card-border)"}`,
       }}>
@@ -181,7 +181,7 @@ export default function JournalPage() {
                 style={{
                   background: data.stress_level === level
                     ? level <= 2 ? "rgba(16,185,129,0.2)" : level <= 3 ? "rgba(245,158,11,0.2)" : "rgba(239,68,68,0.2)"
-                    : "rgba(255,255,255,0.04)",
+                    : "var(--subtle-bg)",
                   color: data.stress_level === level
                     ? level <= 2 ? "#10B981" : level <= 3 ? "#F59E0B" : "#EF4444"
                     : "var(--text3)",

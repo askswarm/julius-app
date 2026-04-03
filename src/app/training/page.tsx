@@ -433,7 +433,7 @@ export default function TrainingPage() {
 
       {/* Activity Picker Modal */}
       {showPicker && !showLog && (
-        <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}>
+        <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "var(--overlay)", backdropFilter: "blur(8px)" }}>
           <div className="flex-1 overflow-y-auto" style={{ paddingTop: "env(safe-area-inset-top)" }}>
             <div className="max-w-lg mx-auto px-4 py-6">
               <div className="flex items-center justify-between mb-6">
@@ -470,7 +470,7 @@ export default function TrainingPage() {
 
       {/* Log Screen */}
       {showLog && selectedSport && (
-        <div className="fixed inset-0 z-50 flex flex-col overflow-y-auto" style={{ background: "#0D1117" }}>
+        <div className="fixed inset-0 z-50 flex flex-col overflow-y-auto" style={{ background: "var(--bg)" }}>
           <div className="max-w-lg mx-auto px-4 py-6 w-full" style={{ paddingBottom: "max(24px, env(safe-area-inset-bottom))" }}>
             {/* Header */}
             <div className="flex items-center gap-3 mb-6">

@@ -195,15 +195,15 @@ export default function ChatPage() {
   let lastDate = "";
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col md:left-[72px]" style={{ background: "#0D1117", touchAction: "manipulation" }}>
+    <div className="fixed inset-0 z-50 flex flex-col md:left-[72px]" style={{ background: "var(--bg)", touchAction: "manipulation" }}>
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor: "var(--card-border)", background: "#161B22", paddingTop: "max(12px, env(safe-area-inset-top))" }}>
+      <div className="flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor: "var(--card-border)", background: "var(--card)", paddingTop: "max(12px, env(safe-area-inset-top))" }}>
         <Link href="/" className="p-1">
           <ArrowLeft size={20} style={{ color: "var(--text2)" }} />
         </Link>
 
         {searchOpen ? (
-          <div className="flex-1 flex items-center gap-2 rounded-xl px-3 py-1.5" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid var(--card-border)" }}>
+          <div className="flex-1 flex items-center gap-2 rounded-xl px-3 py-1.5" style={{ background: "var(--input-bg)", border: "1px solid var(--input-border)" }}>
             <Search size={16} style={{ color: "var(--text3)" }} />
             <input
               autoFocus
@@ -211,7 +211,7 @@ export default function ChatPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Nachrichten durchsuchen..."
               className="flex-1 bg-transparent outline-none text-sm"
-              style={{ color: "var(--text)", fontSize: "16px" }}
+              style={{ color: "var(--input-text)", fontSize: "16px" }}
             />
             <button type="button" onClick={() => { setSearchOpen(false); setSearchQuery(""); }} className="p-0.5">
               <X size={16} style={{ color: "var(--text3)" }} />
@@ -239,7 +239,7 @@ export default function ChatPage() {
         {hasMore && !searchQuery && (
           <button type="button" onClick={loadOlder} disabled={loadingHistory}
             className="self-center px-4 py-2 rounded-full text-xs font-medium mb-2 transition-colors"
-            style={{ background: "rgba(255,255,255,0.04)", color: "var(--text3)", border: "1px solid var(--card-border)" }}>
+            style={{ background: "var(--subtle-bg)", color: "var(--text3)", border: "1px solid var(--card-border)" }}>
             {loadingHistory ? <Loader2 size={14} className="animate-spin" /> : "Aeltere Nachrichten laden"}
           </button>
         )}
@@ -303,7 +303,7 @@ export default function ChatPage() {
                   className="max-w-[85%] md:max-w-[70%] px-4 py-3 text-sm whitespace-pre-wrap"
                   style={{
                     borderRadius: msg.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
-                    background: msg.role === "user" ? "rgba(126,226,184,0.15)" : "#161B22",
+                    background: msg.role === "user" ? "var(--bubble-user)" : "var(--bubble-bot)",
                     color: "var(--text)",
                   }}
                 >
@@ -322,7 +322,7 @@ export default function ChatPage() {
 
         {loading && (
           <div className="flex justify-start">
-            <div className="px-4 py-3 rounded-[18px] rounded-bl-[4px]" style={{ background: "#161B22" }}>
+            <div className="px-4 py-3 rounded-[18px] rounded-bl-[4px]" style={{ background: "var(--bubble-bot)" }}>
               <div className="flex gap-1.5">
                 <span className="w-2 h-2 rounded-full pulse-dot" style={{ background: "var(--accent)", animationDelay: "0s" }} />
                 <span className="w-2 h-2 rounded-full pulse-dot" style={{ background: "var(--accent)", animationDelay: "0.2s" }} />
@@ -342,7 +342,7 @@ export default function ChatPage() {
 
       {/* Pending image preview */}
       {pendingImage && (
-        <div className="px-4 md:px-6 py-2" style={{ background: "#161B22", borderTop: "1px solid var(--card-border)" }}>
+        <div className="px-4 md:px-6 py-2" style={{ background: "var(--card)", borderTop: "1px solid var(--card-border)" }}>
           <div className="relative inline-block">
             <img src={pendingImage} alt="" className="h-16 rounded-lg object-cover" />
             <button type="button" onClick={() => setPendingImage(null)}
@@ -354,7 +354,7 @@ export default function ChatPage() {
       )}
 
       {/* Input */}
-      <div className="px-3 md:px-6 pt-3 flex items-end gap-2" style={{ background: "#161B22", borderTop: "1px solid var(--card-border)", paddingBottom: "max(12px, env(safe-area-inset-bottom))", position: "relative", zIndex: 10 }}>
+      <div className="px-3 md:px-6 pt-3 flex items-end gap-2" style={{ background: "var(--card)", borderTop: "1px solid var(--card-border)", paddingBottom: "max(12px, env(safe-area-inset-bottom))", position: "relative", zIndex: 10 }}>
         <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => {
           const file = e.target.files?.[0];
           if (!file) return;
@@ -368,7 +368,7 @@ export default function ChatPage() {
           <Camera size={22} />
         </button>
 
-        <div className="flex-1 flex items-end rounded-2xl px-4 py-2.5" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid var(--card-border)" }}>
+        <div className="flex-1 flex items-end rounded-2xl px-4 py-2.5" style={{ background: "var(--input-bg)", border: "1px solid var(--input-border)" }}>
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -376,7 +376,7 @@ export default function ChatPage() {
             placeholder="Frag Julius..."
             rows={1}
             className="flex-1 bg-transparent resize-none outline-none max-h-32"
-            style={{ color: "var(--text)", fontSize: "16px", lineHeight: "1.4", touchAction: "manipulation" }}
+            style={{ color: "var(--input-text)", fontSize: "16px", lineHeight: "1.4", touchAction: "manipulation" }}
           />
         </div>
 

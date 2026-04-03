@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Mic, Bell, Camera, Moon, Sun, Download, Trash2, LogOut, ChevronRight, User, Shield, BellRing } from "lucide-react";
 import Link from "next/link";
 import { useUser } from "@/lib/UserContext";
+import { useTheme } from "@/lib/ThemeContext";
 import Card from "@/components/Card";
 import Toast from "@/components/Toast";
 
@@ -55,8 +56,8 @@ function SettingsToggle({ label, enabled, onChange }: { label: string; enabled: 
 
 export default function EinstellungenPage() {
   const { user, userKey, setUserKey } = useUser();
+  const { theme, toggleTheme } = useTheme();
   const [toast, setToast] = useState("");
-  const [dark, setDark] = useState(false);
 
   // Permissions
   const [micPerm, setMicPerm] = useState<PermStatus>("unknown");
@@ -89,10 +90,6 @@ export default function EinstellungenPage() {
       const np = Notification.permission;
       setPushPerm(np === "default" ? "prompt" : np as PermStatus);
     }
-
-    // Dark mode
-    const saved = localStorage.getItem("julius-dark");
-    if (saved === "true") setDark(true);
   }, []);
 
   async function requestMic() {
@@ -116,13 +113,6 @@ export default function EinstellungenPage() {
       const result = await Notification.requestPermission();
       setPushPerm(result === "default" ? "prompt" : result as PermStatus);
     } catch { setPushPerm("denied"); }
-  }
-
-  function toggleDark() {
-    const next = !dark;
-    setDark(next);
-    localStorage.setItem("julius-dark", String(next));
-    document.documentElement.classList.toggle("dark", next);
   }
 
   function exportData() {
@@ -200,14 +190,19 @@ export default function EinstellungenPage() {
         <p className="text-[11px] font-semibold uppercase tracking-[1px] mb-3" style={{ color: "var(--text2)" }}>App</p>
 
         <div className="flex items-center justify-between py-2.5">
-          <div className="flex items-center gap-2">
-            {dark ? <Moon size={18} style={{ color: "var(--text3)" }} /> : <Sun size={18} style={{ color: "var(--text3)" }} />}
-            <span className="text-sm" style={{ color: "var(--text)" }}>Dark Mode</span>
+          <span className="text-sm" style={{ color: "var(--text)" }}>Erscheinungsbild</span>
+          <div className="flex rounded-full p-0.5" style={{ background: "var(--subtle-bg)", border: "1px solid var(--card-border)" }}>
+            <button onClick={() => theme === "dark" && toggleTheme()}
+              className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-all"
+              style={{ background: theme === "light" ? "var(--accent)" : "transparent", color: theme === "light" ? "#0D1117" : "var(--text3)" }}>
+              <Sun size={12} /> Light
+            </button>
+            <button onClick={() => theme === "light" && toggleTheme()}
+              className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-all"
+              style={{ background: theme === "dark" ? "var(--accent)" : "transparent", color: theme === "dark" ? "#0D1117" : "var(--text3)" }}>
+              <Moon size={12} /> Dark
+            </button>
           </div>
-          <button onClick={toggleDark}
-            className={`w-11 h-6 rounded-full transition-colors ${dark ? "bg-emerald-500" : "bg-slate-600"}`}>
-            <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${dark ? "translate-x-5" : "translate-x-0.5"}`} />
-          </button>
         </div>
 
         <div className="flex items-center justify-between py-2.5">

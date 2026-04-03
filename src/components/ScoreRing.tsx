@@ -24,7 +24,7 @@ export default function ScoreRing({ value, max = 100, label, color, size = 96 }:
             <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
           </filter>
         </defs>
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth={6} />
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--ring-bg)" strokeWidth={6} />
         <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={6}
           strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset}
           filter={value != null ? `url(#${id})` : undefined}

@@ -260,13 +260,13 @@ export default function VoiceRecorder({ onTranscript, onError }: VoiceRecorderPr
       <div className="flex items-center gap-2 flex-1">
         <button type="button" onClick={cancelRecording}
           className="flex items-center justify-center rounded-full flex-shrink-0"
-          style={{ background: "rgba(255,255,255,0.06)", color: "var(--text3)", minWidth: 44, minHeight: 44, padding: 10 }}>
+          style={{ background: "var(--subtle-bg)", color: "var(--text3)", minWidth: 44, minHeight: 44, padding: 10 }}>
           <X size={18} />
         </button>
 
         <button type="button" onClick={togglePlayback}
           className="flex items-center gap-2 flex-1 px-3 py-2 rounded-2xl"
-          style={{ background: "rgba(255,255,255,0.06)", border: "1px solid var(--card-border)", minHeight: 44 }}>
+          style={{ background: "var(--subtle-bg)", border: "1px solid var(--card-border)", minHeight: 44 }}>
           <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "var(--grad-teal)" }}>
             {playing ? <Pause size={12} style={{ color: "#0D1117" }} /> : <Play size={12} style={{ color: "#0D1117", marginLeft: 1 }} />}
           </div>

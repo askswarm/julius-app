@@ -370,36 +370,18 @@ export default function TrainingPage() {
           {/* Post-Workout Card */}
           {showPostWorkout && <PostWorkoutCard typ={savedTyp} rpe={savedRpe} />}
 
-          {/* Today Hero */}
-          <div className="rounded-[20px] overflow-hidden relative" style={{ height: 200 }}>
-            <img src={matchTrainingImage(planned, userKey)} alt="" className="absolute inset-0 w-full h-full object-cover ken-burns" />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 20%, rgba(13,17,23,0.9) 100%)" }} />
-            <div className="relative h-full p-5 flex flex-col justify-end text-white">
-            {hasLogged ? (
-              <div className="flex flex-col items-center gap-3 py-4">
-                <CheckCircle2 size={48} className="text-emerald-400" />
-                <p className="text-lg font-semibold">Training complete!</p>
-                <div className="flex gap-4 text-sm">
-                  <span>{todayTraining[0].dauer_min || "?"} Min</span>
-                  <span>RPE {todayTraining[0].rpe || "?"}</span>
-                  <span>{todayTraining[0].typ}</span>
-                </div>
-                {todayTraining[0].notizen && (
-                  <p className="text-xs text-slate-400 mt-1">{todayTraining[0].notizen}</p>
-                )}
+          {/* Logged today */}
+          {hasLogged && (
+            <Card className="flex items-center gap-3">
+              <CheckCircle2 size={24} className="text-emerald-400 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold" style={{ color: "var(--text)" }}>Training complete!</p>
+                <p className="text-xs" style={{ color: "var(--text2)" }}>
+                  {todayTraining[0].name} — {todayTraining[0].dauer_min || "?"} Min, RPE {todayTraining[0].rpe || "?"}
+                </p>
               </div>
-            ) : (
-              <>
-                <p className="text-xs text-slate-400 uppercase tracking-wider">Heute geplant</p>
-                <h2 className="text-xl font-semibold mt-1">{planned}</h2>
-                <p className="text-sm text-slate-400 mt-1">Home-Gym — ca. 50 Min</p>
-                <div className="flex gap-3 mt-3">
-                  <span className="px-3 py-1 bg-white/10 rounded-full text-xs">50 Min</span>
-                  <span className="px-3 py-1 bg-white/10 rounded-full text-xs">~350 kcal</span>
-                </div>
-              </>
-            )}
-          </div></div>
+            </Card>
+          )}
 
           <h3 className="text-sm font-medium text-slate-500">Letzte Trainings</h3>
           {recent.slice(0, 7).map((t) => (

@@ -141,9 +141,9 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "#0D1117" }}>
+    <div className="fixed inset-0 z-50 flex flex-col md:left-[72px]" style={{ background: "#0D1117" }}>
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor: "var(--card-border)", background: "rgba(22,27,34,0.95)", backdropFilter: "blur(20px)" }}>
+      <div className="flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor: "var(--card-border)", background: "rgba(22,27,34,0.95)", backdropFilter: "blur(20px)", paddingTop: "max(12px, env(safe-area-inset-top))" }}>
         <Link href="/" className="p-1">
           <ArrowLeft size={20} style={{ color: "var(--text2)" }} />
         </Link>
@@ -157,7 +157,7 @@ export default function ChatPage() {
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 md:px-6 py-4 flex flex-col gap-3">
         {messages.length === 0 && (
           <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center py-20">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold" style={{ background: "var(--grad-teal)", color: "#0D1117" }}>
@@ -182,7 +182,7 @@ export default function ChatPage() {
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
-              className="max-w-[85%] px-4 py-3 text-sm whitespace-pre-wrap"
+              className="max-w-[85%] md:max-w-[70%] px-4 py-3 text-sm whitespace-pre-wrap"
               style={{
                 borderRadius: msg.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
                 background: msg.role === "user" ? "rgba(126,226,184,0.15)" : "#161B22",
@@ -215,7 +215,7 @@ export default function ChatPage() {
 
       {/* Pending image preview */}
       {pendingImage && (
-        <div className="px-4 py-2" style={{ background: "#161B22", borderTop: "1px solid var(--card-border)" }}>
+        <div className="px-4 md:px-6 py-2" style={{ background: "#161B22", borderTop: "1px solid var(--card-border)" }}>
           <div className="relative inline-block">
             <img src={pendingImage} alt="" className="h-16 rounded-lg object-cover" />
             <button onClick={() => setPendingImage(null)}
@@ -227,7 +227,7 @@ export default function ChatPage() {
       )}
 
       {/* Input */}
-      <div className="px-3 pt-3 flex items-end gap-2" style={{ background: "rgba(22,27,34,0.95)", borderTop: "1px solid var(--card-border)", backdropFilter: "blur(20px)", paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
+      <div className="px-3 md:px-6 pt-3 flex items-end gap-2 relative z-10" style={{ background: "rgba(22,27,34,0.95)", borderTop: "1px solid var(--card-border)", backdropFilter: "blur(20px)", paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
         <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFileChange} />
 
         <button onClick={handlePhoto} className="p-2.5 rounded-full transition-colors flex-shrink-0" style={{ color: "var(--text2)" }}>

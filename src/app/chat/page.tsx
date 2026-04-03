@@ -141,9 +141,9 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col md:left-[72px]" style={{ background: "#0D1117" }}>
+    <div className="fixed inset-0 z-50 flex flex-col md:left-[72px]" style={{ background: "#0D1117", touchAction: "manipulation" }}>
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor: "var(--card-border)", background: "rgba(22,27,34,0.95)", backdropFilter: "blur(20px)", paddingTop: "max(12px, env(safe-area-inset-top))" }}>
+      <div className="flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor: "var(--card-border)", background: "#161B22", paddingTop: "max(12px, env(safe-area-inset-top))" }}>
         <Link href="/" className="p-1">
           <ArrowLeft size={20} style={{ color: "var(--text2)" }} />
         </Link>
@@ -226,11 +226,11 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* Input */}
-      <div className="px-3 md:px-6 pt-3 flex items-end gap-2 relative z-10" style={{ background: "rgba(22,27,34,0.95)", borderTop: "1px solid var(--card-border)", backdropFilter: "blur(20px)", paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
+      {/* Input — no backdropFilter (breaks touch on Safari) */}
+      <div className="px-3 md:px-6 pt-3 flex items-end gap-2" style={{ background: "#161B22", borderTop: "1px solid var(--card-border)", paddingBottom: "max(12px, env(safe-area-inset-bottom))", position: "relative", zIndex: 10 }}>
         <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFileChange} />
 
-        <button onClick={handlePhoto} className="p-2.5 rounded-full transition-colors flex-shrink-0" style={{ color: "var(--text2)" }}>
+        <button type="button" onClick={handlePhoto} className="p-2.5 rounded-full transition-colors flex-shrink-0" style={{ color: "var(--text2)" }}>
           <Camera size={22} />
         </button>
 
@@ -241,19 +241,19 @@ export default function ChatPage() {
             onKeyDown={handleKeyDown}
             placeholder="Frag Julius..."
             rows={1}
-            className="flex-1 bg-transparent text-sm resize-none outline-none max-h-32"
-            style={{ color: "var(--text)", fontSize: "16px" }}
+            className="flex-1 bg-transparent resize-none outline-none max-h-32"
+            style={{ color: "var(--text)", fontSize: "16px", lineHeight: "1.4", touchAction: "manipulation" }}
           />
         </div>
 
-        <button onClick={toggleRecording}
+        <button type="button" onClick={toggleRecording}
           className="p-2.5 rounded-full transition-colors flex-shrink-0"
           style={{ color: recording ? "#EF4444" : "var(--text2)" }}>
           {recording ? <MicOff size={22} /> : <Mic size={22} />}
         </button>
 
         {(input.trim() || pendingImage) && (
-          <button onClick={() => sendMessage()} className="p-2.5 rounded-full flex-shrink-0" style={{ background: "var(--grad-teal)" }}>
+          <button type="button" onClick={() => sendMessage()} className="p-2.5 rounded-full flex-shrink-0" style={{ background: "var(--grad-teal)" }}>
             <Send size={18} style={{ color: "#0D1117" }} />
           </button>
         )}

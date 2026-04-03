@@ -78,6 +78,33 @@ export function matchTrainingImage(typ: string, user: string = "vincent"): strin
   return fallbackImages.kraft;
 }
 
+// Profile pictures
+export const PROFILE_IMAGES: Record<string, string> = {
+  vincent: "https://images.unsplash.com/photo-1583468982228-19f19164aee2?w=400&h=400&fit=crop&crop=face",
+  maria: "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=400&h=400&fit=crop&crop=face",
+};
+
+// Hero images per page
+export const HERO_IMAGES: Record<string, Record<string, string>> = {
+  training: {
+    vincent: "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=800&h=500&fit=crop",
+    maria: "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&h=500&fit=crop",
+  },
+  ernaehrung: {
+    default: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800&h=300&fit=crop",
+  },
+};
+
+export function getProfileImage(user: string): string {
+  return PROFILE_IMAGES[user] || PROFILE_IMAGES.vincent;
+}
+
+export function getHeroImage(page: string, user: string): string {
+  const pageImages = HERO_IMAGES[page];
+  if (!pageImages) return "";
+  return pageImages[user] || pageImages.default || pageImages.vincent || "";
+}
+
 const SLEEP_HEROES: Record<string, string> = {
   vincent: "https://images.unsplash.com/photo-1507400492013-162706c8c05e?w=800&h=300&fit=crop",
   maria: "https://images.unsplash.com/photo-1495197359483-d092478c170a?w=800&h=300&fit=crop",

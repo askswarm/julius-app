@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { Syringe, Save } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Syringe, Save, ChevronRight, Settings, BarChart3, Target } from "lucide-react";
 import { differenceInYears } from "date-fns";
+import Link from "next/link";
 import { useUser } from "@/lib/UserContext";
 import { supabase } from "@/lib/supabase";
+import { getProfileImage } from "@/lib/images";
 import Card from "@/components/Card";
 import FamilySwitcher from "@/components/FamilySwitcher";
-import AvatarUpload from "@/components/AvatarUpload";
 import Toast from "@/components/Toast";
 
 const GOAL_OPTIONS = ["Longevity", "Muskelaufbau", "VO2max", "HYROX", "Muskelerhalt", "Recomp", "Gewichtsverlust"];
@@ -15,9 +16,7 @@ const GOAL_OPTIONS = ["Longevity", "Muskelaufbau", "VO2max", "HYROX", "Muskelerh
 export default function ProfilPage() {
   const { user, userKey } = useUser();
   const isVincent = userKey === "vincent";
-
   const [toast, setToast] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
 
   const [name, setName] = useState(user.name);
   const [geburtsdatum, setGeburtsdatum] = useState(isVincent ? "1987-03-15" : "1984-06-20");
@@ -27,6 +26,7 @@ export default function ProfilPage() {
   const [zielgewicht, setZielgewicht] = useState(isVincent ? 80 : 55);
   const [goals, setGoals] = useState<string[]>(isVincent ? ["VO2max", "Muskelerhalt", "Longevity", "HYROX"] : ["Muskelaufbau", "HYROX", "Longevity"]);
   const [customGoal, setCustomGoal] = useState("");
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     setName(user.name);
@@ -38,136 +38,187 @@ export default function ProfilPage() {
     setGoals(isVincent ? ["VO2max", "Muskelerhalt", "Longevity", "HYROX"] : ["Muskelaufbau", "HYROX", "Longevity"]);
   }, [user, isVincent]);
 
-  function toggleGoal(g: string) {
-    setGoals((prev) => prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]);
-  }
-
   const alter = geburtsdatum ? differenceInYears(new Date(), new Date(geburtsdatum)) : user.alter_jahre;
   const bmi = (gewicht / ((groesse / 100) ** 2)).toFixed(1);
 
   async function saveProfile() {
-    const { error } = await supabase.from("users").update({
+    await supabase.from("users").update({
       name, geschlecht, groesse_cm: groesse, gewicht_kg: gewicht, alter_jahre: alter, ziele: goals,
     }).eq("id", user.id);
-    if (!error) setToast("Profil gespeichert");
+    setToast("Profil gespeichert");
+    setEditing(false);
   }
 
   const inputStyle = { background: "var(--input-bg)", color: "var(--input-text)", borderColor: "var(--input-border)" };
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col items-center gap-3 py-6">
-        <AvatarUpload chatId={user.id} name={name} currentUrl={avatarUrl || undefined}
-          onUpload={(url) => { setAvatarUrl(url); setToast("Foto gespeichert"); }} />
-        <h1 className="text-2xl font-semibold mt-2" style={{ color: "var(--text)" }}>{name}</h1>
-        <p className="text-sm" style={{ color: "var(--text2)" }}>{alter}J · {groesse}cm · {gewicht}kg · BMI {bmi}</p>
-      </div>
-
-      <FamilySwitcher />
-
-      <Card>
-        <h3 className="text-sm font-medium mb-3" style={{ color: "var(--text)" }}>Persoenliche Daten</h3>
-        <div className="flex flex-col gap-3">
-          <div>
-            <label className="text-xs" style={{ color: "var(--text2)" }}>Name</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)}
-              className="w-full mt-1 px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs" style={{ color: "var(--text2)" }}>Geburtsdatum</label>
-              <input type="date" value={geburtsdatum} onChange={(e) => setGeburtsdatum(e.target.value)}
-                className="w-full mt-1 px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
-            </div>
-            <div>
-              <label className="text-xs" style={{ color: "var(--text2)" }}>Geschlecht</label>
-              <select value={geschlecht} onChange={(e) => setGeschlecht(e.target.value)}
-                className="w-full mt-1 px-3 py-2 rounded-lg text-sm border" style={inputStyle}>
-                <option value="M">Maennlich</option>
-                <option value="F">Weiblich</option>
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="text-xs" style={{ color: "var(--text2)" }}>Groesse (cm)</label>
-              <input type="number" value={groesse} onChange={(e) => setGroesse(Number(e.target.value))}
-                className="w-full mt-1 px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
-            </div>
-            <div>
-              <label className="text-xs" style={{ color: "var(--text2)" }}>Gewicht (kg)</label>
-              <input type="number" step="0.1" value={gewicht} onChange={(e) => setGewicht(Number(e.target.value))}
-                className="w-full mt-1 px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
-            </div>
-            <div>
-              <label className="text-xs" style={{ color: "var(--text2)" }}>Ziel (kg)</label>
-              <input type="number" step="0.1" value={zielgewicht} onChange={(e) => setZielgewicht(Number(e.target.value))}
-                className="w-full mt-1 px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
-            </div>
-          </div>
-          <button onClick={saveProfile}
-            className="flex items-center justify-center gap-2 mt-2 px-4 py-2.5 text-sm font-medium rounded-xl transition-colors"
-            style={{ background: "var(--grad-teal)", color: "#0D1117" }}>
-            <Save size={16} /> Speichern
-          </button>
-        </div>
-      </Card>
-
-      <Card>
-        <h3 className="text-sm font-medium mb-2" style={{ color: "var(--text)" }}>Ziele</h3>
-        <div className="flex flex-wrap gap-2">
-          {GOAL_OPTIONS.map((g) => (
-            <button key={g} onClick={() => toggleGoal(g)}
-              className="text-xs px-3 py-1.5 rounded-full border transition-colors"
-              style={{
-                background: goals.includes(g) ? "var(--accent)" : "var(--input-bg)",
-                color: goals.includes(g) ? "#0D1117" : "var(--text2)",
-                borderColor: goals.includes(g) ? "var(--accent)" : "var(--input-border)",
-              }}>
-              {g}
-            </button>
-          ))}
-        </div>
-        <div className="flex gap-2 mt-3">
-          <input type="text" placeholder="Eigenes Ziel..." value={customGoal} onChange={(e) => setCustomGoal(e.target.value)}
-            className="flex-1 px-3 py-1.5 rounded-lg text-xs border" style={inputStyle}
-            onKeyDown={(e) => { if (e.key === "Enter" && customGoal.trim()) { setGoals([...goals, customGoal.trim()]); setCustomGoal(""); } }}
+      {/* Hero Profile Section */}
+      <div className="flex flex-col items-center gap-3 pt-4 pb-2">
+        <div className="relative">
+          <img
+            src={getProfileImage(userKey)}
+            alt={name}
+            className="w-28 h-28 rounded-full object-cover"
+            style={{ border: "3px solid var(--accent)", boxShadow: "0 0 20px rgba(126,226,184,0.2)" }}
           />
         </div>
-      </Card>
+        <div className="text-center">
+          <h1 className="text-xl font-bold" style={{ color: "var(--text)" }}>{name}</h1>
+          <p className="text-xs" style={{ color: "var(--accent)" }}>Longevity Athlete</p>
+        </div>
+        <FamilySwitcher />
+      </div>
 
+      {/* Quick Stats */}
+      <div className="grid grid-cols-4 gap-2">
+        {[
+          { value: alter, unit: "", label: "Alter" },
+          { value: gewicht, unit: "kg", label: "Gewicht" },
+          { value: groesse, unit: "cm", label: "Groesse" },
+          { value: bmi, unit: "", label: "BMI" },
+        ].map((s) => (
+          <Card key={s.label} className="text-center !px-3 !py-3">
+            <p className="text-lg font-bold" style={{ color: "var(--text)" }}>{s.value}<span className="text-[10px] font-normal" style={{ color: "var(--text3)" }}>{s.unit}</span></p>
+            <p className="text-[10px]" style={{ color: "var(--text3)" }}>{s.label}</p>
+          </Card>
+        ))}
+      </div>
+
+      {/* Daily Targets */}
       <Card>
-        <h3 className="text-sm font-medium mb-3" style={{ color: "var(--text)" }}>Metriken</h3>
-        <div className="grid grid-cols-2 gap-3 text-center">
-          <div><p className="text-2xl font-bold" style={{ color: "var(--text)" }}>{bmi}</p><p className="text-xs" style={{ color: "var(--text2)" }}>BMI</p></div>
-          <div><p className="text-2xl font-bold" style={{ color: "var(--text)" }}>{user.protein_ziel_g}<span className="text-sm" style={{ color: "var(--text3)" }}>g</span></p><p className="text-xs" style={{ color: "var(--text2)" }}>Protein/Tag</p></div>
-          <div><p className="text-2xl font-bold" style={{ color: "var(--text)" }}>{user.kcal_training}</p><p className="text-xs" style={{ color: "var(--text2)" }}>kcal Training</p></div>
-          <div><p className="text-2xl font-bold" style={{ color: "var(--text)" }}>{user.wasser_ziel_ml / 1000}<span className="text-sm" style={{ color: "var(--text3)" }}>L</span></p><p className="text-xs" style={{ color: "var(--text2)" }}>Wasser/Tag</p></div>
+        <div className="flex items-center gap-2 mb-3">
+          <Target size={16} style={{ color: "var(--accent)" }} />
+          <p className="text-[11px] font-semibold uppercase tracking-[1px]" style={{ color: "var(--text2)" }}>Tagesziele</p>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex justify-between"><span className="text-sm" style={{ color: "var(--text2)" }}>Protein</span><span className="text-sm font-medium" style={{ color: "var(--text)" }}>{user.protein_ziel_g}g</span></div>
+          <div className="flex justify-between"><span className="text-sm" style={{ color: "var(--text2)" }}>kcal Training</span><span className="text-sm font-medium" style={{ color: "var(--text)" }}>{user.kcal_training}</span></div>
+          <div className="flex justify-between"><span className="text-sm" style={{ color: "var(--text2)" }}>Wasser</span><span className="text-sm font-medium" style={{ color: "var(--text)" }}>{user.wasser_ziel_ml / 1000}L</span></div>
+          <div className="flex justify-between"><span className="text-sm" style={{ color: "var(--text2)" }}>Fasten</span><span className="text-sm font-medium" style={{ color: "var(--text)" }}>{isVincent ? "15" : "14"}h</span></div>
         </div>
       </Card>
 
+      {/* Goals */}
       <Card>
-        <h3 className="text-sm font-medium mb-2" style={{ color: "var(--text)" }}>Autophagie / Fasten</h3>
-        <div className="flex justify-between text-sm">
-          <span style={{ color: "var(--text2)" }}>Essensfenster</span>
-          <span className="font-medium" style={{ color: "var(--text)" }}>{user.essensfenster_start} – {user.essensfenster_ende}</span>
-        </div>
-        <div className="flex justify-between text-sm mt-1">
-          <span style={{ color: "var(--text2)" }}>Fastendauer</span>
-          <span className="font-medium" style={{ color: "var(--text)" }}>{isVincent ? "15" : "14"} Stunden</span>
+        <p className="text-[11px] font-semibold uppercase tracking-[1px] mb-2" style={{ color: "var(--text2)" }}>Ziele</p>
+        <div className="flex flex-wrap gap-2">
+          {goals.map((g) => (
+            <span key={g} className="text-xs px-3 py-1.5 rounded-full" style={{ background: "rgba(126,226,184,0.1)", color: "var(--accent)", border: "1px solid rgba(126,226,184,0.2)" }}>
+              {g}
+            </span>
+          ))}
         </div>
       </Card>
 
+      {/* TRT (Vincent only) */}
       {isVincent && (
         <Card>
           <div className="flex items-center gap-2 mb-2">
             <Syringe size={16} className="text-blue-500" />
-            <h3 className="text-sm font-medium" style={{ color: "var(--text)" }}>TRT Protokoll</h3>
+            <p className="text-[11px] font-semibold uppercase tracking-[1px]" style={{ color: "var(--text2)" }}>TRT Protokoll</p>
           </div>
           <div className="text-sm flex flex-col gap-1" style={{ color: "var(--text2)" }}>
             <div className="flex justify-between"><span>Dosis</span><span style={{ color: "var(--text)" }}>120mg/Woche</span></div>
             <div className="flex justify-between"><span>Frequenz</span><span style={{ color: "var(--text)" }}>2x (Mi + Sa)</span></div>
             <div className="flex justify-between"><span>Pro Injektion</span><span style={{ color: "var(--text)" }}>0.2ml / 60mg</span></div>
+          </div>
+        </Card>
+      )}
+
+      {/* Menu Links */}
+      <Card>
+        <button onClick={() => setEditing(!editing)} className="flex items-center justify-between w-full py-2.5">
+          <div className="flex items-center gap-3">
+            <Save size={18} style={{ color: "var(--text3)" }} />
+            <span className="text-sm" style={{ color: "var(--text)" }}>Daten bearbeiten</span>
+          </div>
+          <ChevronRight size={16} style={{ color: "var(--text3)", transform: editing ? "rotate(90deg)" : "none", transition: "transform 0.2s" }} />
+        </button>
+
+        <Link href="/report" className="flex items-center justify-between w-full py-2.5">
+          <div className="flex items-center gap-3">
+            <BarChart3 size={18} style={{ color: "var(--text3)" }} />
+            <span className="text-sm" style={{ color: "var(--text)" }}>Wochen-Report</span>
+          </div>
+          <ChevronRight size={16} style={{ color: "var(--text3)" }} />
+        </Link>
+
+        <Link href="/einstellungen" className="flex items-center justify-between w-full py-2.5">
+          <div className="flex items-center gap-3">
+            <Settings size={18} style={{ color: "var(--text3)" }} />
+            <span className="text-sm" style={{ color: "var(--text)" }}>Einstellungen</span>
+          </div>
+          <ChevronRight size={16} style={{ color: "var(--text3)" }} />
+        </Link>
+      </Card>
+
+      {/* Edit Form (collapsible) */}
+      {editing && (
+        <Card>
+          <p className="text-[11px] font-semibold uppercase tracking-[1px] mb-3" style={{ color: "var(--text2)" }}>Daten bearbeiten</p>
+          <div className="flex flex-col gap-3">
+            <div>
+              <label className="text-xs" style={{ color: "var(--text2)" }}>Name</label>
+              <input type="text" value={name} onChange={(e) => setName(e.target.value)}
+                className="w-full mt-1 px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs" style={{ color: "var(--text2)" }}>Geburtsdatum</label>
+                <input type="date" value={geburtsdatum} onChange={(e) => setGeburtsdatum(e.target.value)}
+                  className="w-full mt-1 px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
+              </div>
+              <div>
+                <label className="text-xs" style={{ color: "var(--text2)" }}>Geschlecht</label>
+                <select value={geschlecht} onChange={(e) => setGeschlecht(e.target.value)}
+                  className="w-full mt-1 px-3 py-2 rounded-lg text-sm border" style={inputStyle}>
+                  <option value="M">Maennlich</option>
+                  <option value="F">Weiblich</option>
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="text-xs" style={{ color: "var(--text2)" }}>Groesse</label>
+                <input type="number" value={groesse} onChange={(e) => setGroesse(Number(e.target.value))}
+                  className="w-full mt-1 px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
+              </div>
+              <div>
+                <label className="text-xs" style={{ color: "var(--text2)" }}>Gewicht</label>
+                <input type="number" step="0.1" value={gewicht} onChange={(e) => setGewicht(Number(e.target.value))}
+                  className="w-full mt-1 px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
+              </div>
+              <div>
+                <label className="text-xs" style={{ color: "var(--text2)" }}>Ziel kg</label>
+                <input type="number" step="0.1" value={zielgewicht} onChange={(e) => setZielgewicht(Number(e.target.value))}
+                  className="w-full mt-1 px-3 py-2 rounded-lg text-sm border" style={inputStyle} />
+              </div>
+            </div>
+
+            <p className="text-xs mt-2" style={{ color: "var(--text2)" }}>Ziele</p>
+            <div className="flex flex-wrap gap-2">
+              {GOAL_OPTIONS.map((g) => (
+                <button key={g} onClick={() => setGoals((prev) => prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g])}
+                  className="text-xs px-3 py-1.5 rounded-full border transition-colors"
+                  style={{
+                    background: goals.includes(g) ? "var(--accent)" : "var(--input-bg)",
+                    color: goals.includes(g) ? "#0D1117" : "var(--text2)",
+                    borderColor: goals.includes(g) ? "var(--accent)" : "var(--input-border)",
+                  }}>
+                  {g}
+                </button>
+              ))}
+            </div>
+            <input type="text" placeholder="Eigenes Ziel..." value={customGoal} onChange={(e) => setCustomGoal(e.target.value)}
+              className="px-3 py-1.5 rounded-lg text-xs border" style={inputStyle}
+              onKeyDown={(e) => { if (e.key === "Enter" && customGoal.trim()) { setGoals([...goals, customGoal.trim()]); setCustomGoal(""); } }} />
+
+            <button onClick={saveProfile}
+              className="flex items-center justify-center gap-2 mt-2 px-4 py-2.5 text-sm font-medium rounded-xl"
+              style={{ background: "var(--grad-teal)", color: "#0D1117" }}>
+              <Save size={16} /> Speichern
+            </button>
           </div>
         </Card>
       )}

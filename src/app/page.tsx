@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useUser } from "@/lib/UserContext";
 import { getTodayScores, getTodayMacros, getTodayTraining, getTodaySupplements, getTrainingLoad, getTodayMacroAdjustment, getTodayOura, getOuraHistory } from "@/lib/queries";
 import { calculateDynamicKcal } from "@/lib/calorieLogic";
+import { getProfileImage } from "@/lib/images";
 import { TRAINING_SCHEDULE } from "@/lib/constants";
 import type { DailyScore, MacroSummary, TrainingEntry } from "@/lib/types";
 import FamilySwitcher from "@/components/FamilySwitcher";
@@ -108,11 +109,17 @@ export default function HomePage() {
     <div className="flex flex-col gap-4">
       {/* Header */}
       <div className="flex items-center justify-between animate-fade-in">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-[1px]" style={{ color: "var(--text3)" }}>
-            {format(today, "EEEE, d. MMMM", { locale: de })}
-          </p>
-          <h1 className="text-2xl font-bold mt-1" style={{ color: "var(--text)" }}>Hallo {user.name}</h1>
+        <div className="flex items-center gap-3">
+          <Link href="/profil">
+            <img src={getProfileImage(userKey)} alt={user.name}
+              className="w-11 h-11 rounded-full object-cover" style={{ border: "2px solid var(--accent)" }} />
+          </Link>
+          <div>
+            <p className="text-xs font-medium uppercase tracking-[1px]" style={{ color: "var(--text3)" }}>
+              {format(today, "EEEE, d. MMMM", { locale: de })}
+            </p>
+            <h1 className="text-xl font-bold" style={{ color: "var(--text)" }}>Hallo {user.name}</h1>
+          </div>
         </div>
         <FamilySwitcher />
       </div>

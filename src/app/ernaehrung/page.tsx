@@ -253,8 +253,16 @@ export default function ErnaehrungPage() {
     <div className="flex flex-col gap-4">
       <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onPhotoChange} />
 
-      <div className="flex items-center justify-between animate-fade-in">
-        <h1 className="text-xl font-bold">Ernaehrung</h1>
+      {/* Hero Image */}
+      <div className="rounded-[20px] overflow-hidden relative animate-fade-in" style={{ height: 140 }}>
+        <img src="https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800&h=300&fit=crop" alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 30%, var(--bg) 100%)" }} />
+        <div className="relative h-full p-5 flex flex-col justify-end">
+          <h1 className="text-xl font-bold text-white" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>Ernaehrung</h1>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-end animate-fade-in">
         <FamilySwitcher />
       </div>
 

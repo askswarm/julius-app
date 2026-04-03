@@ -161,6 +161,34 @@ export default function EinstellungenPage() {
         </Card>
       </Link>
 
+      {/* Wearable Integration */}
+      <Card>
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-sm">&#9201;</span>
+          <p className="text-[11px] font-semibold uppercase tracking-[1px]" style={{ color: "var(--text2)" }}>Wearable-Integration</p>
+        </div>
+        <div className="flex items-center justify-between py-2.5">
+          <div>
+            <p className="text-sm font-medium" style={{ color: "var(--text)" }}>Oura Ring</p>
+            <p className="text-[10px]" style={{ color: "var(--text3)" }}>Schlaf, Readiness, Aktivitaet</p>
+          </div>
+          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "rgba(16,185,129,0.1)", color: "#10B981" }}>
+            Konfiguriert
+          </span>
+        </div>
+        <button onClick={async () => {
+          try {
+            const res = await fetch("/api/oura/sync");
+            const data = await res.json();
+            setToast(data.success ? `Sync OK — Schlaf ${data.sleep || "?"}, Readiness ${data.readiness || "?"}` : (data.error || "Sync fehlgeschlagen"));
+          } catch { setToast("Sync fehlgeschlagen"); }
+        }}
+          className="w-full py-2 rounded-xl text-xs font-medium mt-2 transition-all"
+          style={{ background: "var(--subtle-bg)", color: "var(--accent)", border: "1px solid var(--card-border)" }}>
+          Jetzt synchronisieren
+        </button>
+      </Card>
+
       {/* Permissions */}
       <Card>
         <div className="flex items-center gap-2 mb-3">

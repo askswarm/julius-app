@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { Dumbbell, ChevronRight } from "lucide-react";
 import { useUser } from "@/lib/UserContext";
-import { getTodayScores, getTodayMacros, getTodayTraining, getTodaySupplements, getTrainingLoad } from "@/lib/queries";
+import { getTodayScores, getTodayMacros, getTodayTraining, getTodaySupplements, getTrainingLoad, getTodayMacroAdjustment } from "@/lib/queries";
 import { TRAINING_SCHEDULE } from "@/lib/constants";
 import type { DailyScore, MacroSummary, TrainingEntry } from "@/lib/types";
 import FamilySwitcher from "@/components/FamilySwitcher";
@@ -29,6 +29,7 @@ export default function HomePage() {
   const [training, setTraining] = useState<TrainingEntry[]>([]);
   const [supplements, setSupplements] = useState<string[]>([]);
   const [load, setLoad] = useState(0);
+  const [macroAdj, setMacroAdj] = useState({ kcal: 0, protein: 0 });
 
   useEffect(() => {
     const id = user.id;
@@ -37,7 +38,11 @@ export default function HomePage() {
     getTodayTraining(id).then(setTraining);
     getTodaySupplements(id).then(setSupplements);
     getTrainingLoad(id).then(setLoad);
+    getTodayMacroAdjustment(id).then(setMacroAdj);
   }, [user.id]);
+
+  const adjustedKcal = user.kcal_training + macroAdj.kcal;
+  const adjustedProtein = user.protein_ziel_g + macroAdj.protein;
 
   const today = new Date();
   const schedule = TRAINING_SCHEDULE[today.getDay()];
@@ -70,10 +75,13 @@ export default function HomePage() {
       <Card className="animate-fade-in stagger-3">
         <div className="flex justify-between items-center mb-4">
           <span className="text-[11px] font-semibold uppercase tracking-[1px]" style={{ color: "var(--text2)" }}>Makros heute</span>
-          <span className="text-xs font-medium" style={{ color: "var(--text3)" }}>{macros.kcal} / {user.kcal_training} kcal</span>
+          <span className="text-xs font-medium" style={{ color: "var(--text3)" }}>
+            {macros.kcal} / {adjustedKcal} kcal
+            {macroAdj.kcal > 0 && <span style={{ color: "var(--accent)" }}> (+{macroAdj.kcal})</span>}
+          </span>
         </div>
         <div className="flex flex-col gap-3">
-          <MacroBar label="Protein" current={macros.protein_g} target={user.protein_ziel_g} gradient={GRADIENTS.protein} />
+          <MacroBar label="Protein" current={macros.protein_g} target={adjustedProtein} gradient={GRADIENTS.protein} />
           <MacroBar label="Carbs" current={macros.carbs_g} target={200} gradient={GRADIENTS.carbs} />
           <MacroBar label="Fett" current={macros.fett_g} target={80} gradient={GRADIENTS.fett} />
           <MacroBar label="Wasser" current={macros.wasser_ml} target={user.wasser_ziel_ml} gradient={GRADIENTS.wasser} unit="ml" />

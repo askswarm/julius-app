@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase-server";
+import { calculateMacroAdjustment } from "@/lib/macroAdjustment";
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,7 +28,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, training: data });
+    // Calculate macro adjustment
+    const adj = calculateMacroAdjustment(typ, dauer_min || 45);
+
+    // Upsert macro adjustment for today
+    await supabaseServer
+      .from("macro_adjustments")
+      .upsert(
+        { chat_id: chatId, datum, kcal_adjustment: adj.kcal, protein_adjustment: adj.protein, training_typ: typ },
+        { onConflict: "chat_id,datum" }
+      );
+
+    return NextResponse.json({ success: true, training: data, adjustment: adj });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Internal error";
     return NextResponse.json({ error: msg }, { status: 500 });

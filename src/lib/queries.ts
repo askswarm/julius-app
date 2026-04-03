@@ -135,6 +135,16 @@ export async function getLatestBloodwork(chatId: number): Promise<Record<string,
   return latest;
 }
 
+export async function getTodayMacroAdjustment(chatId: number): Promise<{ kcal: number; protein: number }> {
+  const { data } = await supabase
+    .from("macro_adjustments")
+    .select("kcal_adjustment, protein_adjustment")
+    .eq("chat_id", chatId)
+    .eq("datum", today())
+    .maybeSingle();
+  return { kcal: data?.kcal_adjustment || 0, protein: data?.protein_adjustment || 0 };
+}
+
 export async function getWeekTrainingCount(chatId: number): Promise<{total: number; byType: Record<string, number>}> {
   const { data } = await supabase
     .from("training_log")

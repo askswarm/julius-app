@@ -135,6 +135,26 @@ export async function getLatestBloodwork(chatId: number): Promise<Record<string,
   return latest;
 }
 
+export async function getTodayOura(chatId: number) {
+  const { data } = await supabase
+    .from("oura_data")
+    .select("*")
+    .eq("chat_id", chatId)
+    .eq("datum", today())
+    .maybeSingle();
+  return data;
+}
+
+export async function getOuraHistory(chatId: number, days: number = 14) {
+  const { data } = await supabase
+    .from("oura_data")
+    .select("datum, sleep_score, readiness_score, deep_sleep_min, rem_sleep_min, light_sleep_min, total_sleep_min, sleep_efficiency, resting_hr, active_calories, steps")
+    .eq("chat_id", chatId)
+    .gte("datum", daysAgo(days))
+    .order("datum");
+  return data || [];
+}
+
 export async function getRecentAdaptations(chatId: number, days: number = 7): Promise<{ datum: string; trigger: string; category: string; description: string }[]> {
   const since = new Date();
   since.setDate(since.getDate() - days);

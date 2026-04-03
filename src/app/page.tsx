@@ -14,6 +14,7 @@ import MacroBar from "@/components/MacroBar";
 import Card from "@/components/Card";
 import AutophagieTimer from "@/components/AutophagieTimer";
 import SupplementStatus from "@/components/SupplementStatus";
+import LifeTimeline from "@/components/LifeTimeline";
 
 const GRADIENTS = {
   protein: "linear-gradient(90deg, #2EA67A, #7EE2B8)",
@@ -66,6 +67,12 @@ export default function HomePage() {
         <ScoreRing value={scores?.readiness ?? null} label="Readiness" color="#7EE2B8" />
         <ScoreRing value={scores?.sleep ?? null} label="Schlaf" color="#79C0FF" />
         <ScoreRing value={Math.min(load, 1000)} max={1000} label="Load 48h" color="#F97316" />
+      </Card>
+
+      {/* Life Timeline */}
+      <Card className="animate-fade-in stagger-2">
+        <span className="text-[11px] font-semibold uppercase tracking-[1px] block mb-3" style={{ color: "var(--text2)" }}>Tagesverlauf</span>
+        <LifeTimeline />
       </Card>
 
       {/* Autophagie */}

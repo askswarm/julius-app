@@ -17,6 +17,7 @@ import FamilySwitcher from "@/components/FamilySwitcher";
 import Card from "@/components/Card";
 import Toast from "@/components/Toast";
 import MuscleMap from "@/components/MuscleMap";
+import PostWorkoutSummary from "@/components/PostWorkoutSummary";
 import SessionStartAnimation from "@/components/SessionStartAnimation";
 import GPSTracker from "@/components/GPSTracker";
 import { AnimatePresence } from "framer-motion";
@@ -371,8 +372,8 @@ export default function TrainingPage() {
             <Plus size={22} /> Training starten
           </button>
 
-          {/* Post-Workout Card */}
-          {showPostWorkout && <PostWorkoutCard typ={savedTyp} rpe={savedRpe} />}
+          {/* Post-Workout Summary */}
+          {showPostWorkout && <PostWorkoutSummary typ={savedTyp} rpe={savedRpe} />}
 
           {/* Logged today */}
           {hasLogged && (

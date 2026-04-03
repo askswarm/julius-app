@@ -17,6 +17,8 @@ import FamilySwitcher from "@/components/FamilySwitcher";
 import Card from "@/components/Card";
 import Toast from "@/components/Toast";
 import MuscleMap from "@/components/MuscleMap";
+import SessionStartAnimation from "@/components/SessionStartAnimation";
+import { AnimatePresence } from "framer-motion";
 
 const TABS = ["Uebersicht", "Wochenplan", "Performance"] as const;
 type Tab = (typeof TABS)[number];
@@ -184,6 +186,9 @@ export default function TrainingPage() {
   const [savedTyp, setSavedTyp] = useState("");
   const [savedRpe, setSavedRpe] = useState(6);
   const [analyzingPhoto, setAnalyzingPhoto] = useState(false);
+  const [showSessionAnim, setShowSessionAnim] = useState(false);
+  const [sessionAnimSport, setSessionAnimSport] = useState("");
+  const [sessionAnimImage, setSessionAnimImage] = useState("");
   const photoRef = useRef<HTMLInputElement>(null);
 
   const reload = useCallback(() => {
@@ -341,7 +346,7 @@ export default function TrainingPage() {
 
           {/* Today Hero */}
           <div className="rounded-[20px] overflow-hidden relative" style={{ height: 200 }}>
-            <img src={matchTrainingImage(planned, userKey)} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            <img src={matchTrainingImage(planned, userKey)} alt="" className="absolute inset-0 w-full h-full object-cover ken-burns" />
             <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 20%, rgba(13,17,23,0.9) 100%)" }} />
             <div className="relative h-full p-5 flex flex-col justify-end text-white">
             {hasLogged ? (
@@ -483,7 +488,13 @@ export default function TrainingPage() {
                   return (
                     <button
                       key={sport.name}
-                      onClick={() => { setSelectedSport(sport); setShowLog(true); }}
+                      onClick={() => {
+                        setSelectedSport(sport);
+                        setSessionAnimSport(sport.name);
+                        setSessionAnimImage(matchTrainingImage(sport.imageKey, userKey));
+                        setShowSessionAnim(true);
+                        setTimeout(() => { setShowSessionAnim(false); setShowLog(true); }, 2500);
+                      }}
                       className="relative rounded-2xl overflow-hidden text-left transition-transform hover:scale-[1.02]"
                       style={{ height: 160 }}
                     >
@@ -630,6 +641,17 @@ export default function TrainingPage() {
           </div>
         </div>
       )}
+
+      {/* Session Start Animation */}
+      <AnimatePresence>
+        {showSessionAnim && (
+          <SessionStartAnimation
+            sport={sessionAnimSport}
+            image={sessionAnimImage}
+            onComplete={() => {}}
+          />
+        )}
+      </AnimatePresence>
 
       <Toast message={toast} visible={!!toast} onHide={() => setToast("")} />
     </div>

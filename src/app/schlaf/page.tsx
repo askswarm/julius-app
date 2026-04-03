@@ -116,7 +116,7 @@ export default function SchlafPage() {
 
       {/* Hero */}
       <div className="rounded-[20px] overflow-hidden relative" style={{ minHeight: 260 }}>
-        <img src={getSleepHero(userKey)} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <img src={getSleepHero(userKey)} alt="" className="absolute inset-0 w-full h-full object-cover ken-burns" />
         <div className="absolute inset-0" style={{ background: "rgba(13,17,23,0.7)" }} />
         <div className="relative flex flex-col items-center py-8">
           <ScoreRing value={today?.sleep ?? null} label="Schlaf-Score" color={COLORS.primary} size={120} />

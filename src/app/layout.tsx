@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/lib/ThemeContext";
 import BottomNav from "@/components/BottomNav";
 import ChatFAB from "@/components/ChatFAB";
 import PushSetup from "@/components/PushSetup";
+import SplashScreen from "@/components/SplashScreen";
 
 const font = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <BottomNav />
             <ChatFAB />
             <PushSetup />
+            <SplashScreen />
           </UserProvider>
         </ThemeProvider>
       </body>

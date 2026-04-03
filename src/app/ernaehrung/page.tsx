@@ -255,7 +255,7 @@ export default function ErnaehrungPage() {
 
       {/* Hero Image */}
       <div className="rounded-[20px] overflow-hidden relative animate-fade-in" style={{ height: 140 }}>
-        <img src="https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800&h=300&fit=crop" alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <img src="https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800&h=300&fit=crop" alt="" className="absolute inset-0 w-full h-full object-cover ken-burns" />
         <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 30%, var(--bg) 100%)" }} />
         <div className="relative h-full p-5 flex flex-col justify-end">
           <h1 className="text-xl font-bold text-white" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>Ernaehrung</h1>

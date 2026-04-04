@@ -51,7 +51,6 @@ export default function ChatPage() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const initialScrollDone = useRef(false);
 
   // Load history on mount
@@ -172,21 +171,15 @@ export default function ChatPage() {
     }
   }
 
-  // Keyboard handling: adjust container height when virtual keyboard opens
+  // Scroll to bottom on focus (keyboard open) with delay for animation
   useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    function onResize() {
-      if (containerRef.current && vv) {
-        containerRef.current.style.height = `${vv.height}px`;
-        requestAnimationFrame(() => {
-          if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        });
-      }
+    function onFocus() {
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+      }, 300);
     }
-    vv.addEventListener("resize", onResize);
-    vv.addEventListener("scroll", onResize);
-    return () => { vv.removeEventListener("resize", onResize); vv.removeEventListener("scroll", onResize); };
+    document.addEventListener("focusin", onFocus);
+    return () => document.removeEventListener("focusin", onFocus);
   }, []);
 
   // Filter messages by search
@@ -198,7 +191,7 @@ export default function ChatPage() {
   let lastDate = "";
 
   return (
-    <div ref={containerRef} className="fixed inset-0 z-50 flex flex-col md:left-[72px]" style={{ background: "var(--bg)", touchAction: "manipulation", height: "100dvh", overflow: "hidden" }}>
+    <div className="fixed inset-0 z-50 flex flex-col md:left-[72px]" style={{ background: "var(--bg)", touchAction: "manipulation", height: "100dvh", overflow: "hidden" }}>
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor: "var(--card-border)", background: "var(--card)", paddingTop: "max(12px, env(safe-area-inset-top))" }}>
         <Link href="/" className="p-1">

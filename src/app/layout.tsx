@@ -4,6 +4,7 @@ import "./globals.css";
 import { UserProvider } from "@/lib/UserContext";
 import { ThemeProvider } from "@/lib/ThemeContext";
 import BottomNav from "@/components/BottomNav";
+import HalflifeNav from "@/components/HalflifeNav";
 import ChatFAB from "@/components/ChatFAB";
 import PushSetup from "@/components/PushSetup";
 import AppShell from "@/components/AppShell";
@@ -38,8 +39,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider>
           <UserProvider>
             <AppShell>
-              <main className="max-w-lg mx-auto px-4 py-5 md:max-w-2xl md:ml-20">{children}</main>
-              <BottomNav />
+              <main className={`max-w-lg mx-auto px-4 py-5 md:max-w-2xl ${isHalflife ? "" : "md:ml-20"}`} style={isHalflife ? { paddingBottom: 90 } : undefined}>{children}</main>
+              {isHalflife ? <HalflifeNav /> : <BottomNav />}
               {!isHalflife && <ChatFAB />}
               <PushSetup />
             </AppShell>

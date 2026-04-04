@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { isHalflife, appName, appTagline } from "@/lib/appConfig";
 
 export default function SplashScreen({ onComplete }: { onComplete: () => void }) {
   const [show, setShow] = useState(true);
@@ -29,7 +30,7 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
           exit={{ opacity: 0, y: -30 }}
           transition={{ duration: 0.5, ease: "easeIn" }}
           className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden"
-          style={{ background: "#0D1117" }}
+          style={{ background: isHalflife ? "#0a0a0c" : "#0D1117" }}
         >
           {/* Animated gradient background */}
           <div className="absolute inset-0 splash-gradient" />
@@ -75,7 +76,10 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
               boxShadow: "0 0 40px rgba(126,226,184,0.3)",
             }}
           >
-            <span style={{ fontSize: 36, fontWeight: 700, color: "#0D1117" }}>J</span>
+            {isHalflife
+              ? <span style={{ fontSize: 24, fontWeight: 600, color: "#e8e8ec", letterSpacing: -0.5 }}>h<span style={{ color: "#2dd4a0" }}>.</span></span>
+              : <span style={{ fontSize: 36, fontWeight: 700, color: "#0D1117" }}>J</span>
+            }
           </motion.div>
 
           {/* Title */}
@@ -84,9 +88,9 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.5 }}
             className="relative z-10"
-            style={{ color: "#E6EDF3", fontSize: 28, fontWeight: 600, marginTop: 20, letterSpacing: 2 }}
+            style={{ color: "#E6EDF3", fontSize: 28, fontWeight: 600, marginTop: 20, letterSpacing: isHalflife ? -0.5 : 2 }}
           >
-            Julius
+            {isHalflife ? <>{appName}<span style={{ color: "#2dd4a0" }}>.</span></> : appName}
           </motion.p>
 
           {/* Subtitle */}
@@ -95,9 +99,9 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8, duration: 0.5 }}
             className="relative z-10"
-            style={{ color: "#7EE2B8", fontSize: 14, marginTop: 8, letterSpacing: 3, textTransform: "uppercase" }}
+            style={{ color: "#7EE2B8", fontSize: 14, marginTop: 8, letterSpacing: 3, textTransform: isHalflife ? "lowercase" : "uppercase" }}
           >
-            Your Longevity Coach
+            {appTagline}
           </motion.p>
         </motion.div>
       )}

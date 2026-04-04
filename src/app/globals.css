@@ -148,3 +148,27 @@ button { -webkit-user-select: none; user-select: none; -webkit-touch-callout: no
   }
   .ken-burns { animation: none !important; }
 }
+
+/* Halflife mode — dark-only protocol app */
+body.halflife-mode {
+  background-color: #0a0a0c !important;
+  color: #e8e8ec !important;
+}
+body.halflife-mode [data-theme] {
+  --bg: #0a0a0c;
+  --card: #111114;
+  --card-border: #1a1a1e;
+  --text: #e8e8ec;
+  --text2: #9a9aa0;
+  --text3: #6b6b70;
+  --accent: #2dd4a0;
+  --nav-bg: #0a0a0c;
+  --nav-border: transparent;
+  --input-bg: #111114;
+  --input-text: #e8e8ec;
+  --input-border: #1a1a1e;
+  --bar-bg: #1a1a1e;
+  --subtle-bg: #111114;
+  --bubble-user: rgba(45,212,160,0.1);
+  --bubble-bot: #111114;
+}

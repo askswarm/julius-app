@@ -29,8 +29,8 @@ const GRADIENTS = {
 
 const PORTION_MULTIPLIER: Record<string, number> = { klein: 0.7, normal: 1, gross: 1.4 };
 
-function MealCard({ entry }: { entry: NutritionEntry }) {
-  const imgUrl = matchFoodImage(entry.gericht_name || "");
+function MealCard({ entry, pexelsImage }: { entry: NutritionEntry; pexelsImage?: string }) {
+  const imgUrl = pexelsImage || matchFoodImage(entry.gericht_name || "");
   const time = entry.created_at ? new Date(entry.created_at).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) : "";
 
   return (
@@ -87,6 +87,7 @@ export default function ErnaehrungPage() {
   const [saving, setSaving] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoResult, setPhotoResult] = useState<{ name: string; kcal: number; protein: number; carbs: number; fett: number } | null>(null);
+  const [mealImages, setMealImages] = useState<Record<string, string>>({});
   const fileRef = useRef<HTMLInputElement>(null);
 
   const reload = useCallback(() => {
@@ -117,6 +118,22 @@ export default function ErnaehrungPage() {
         setFavorites(sorted);
       });
   }, [user.id]);
+
+  // Fetch food image from Pexels in background
+  function fetchFoodImage(name: string) {
+    if (!name || mealImages[name]) return;
+    const words = name.split(/\s+/).slice(0, 2).join(" ");
+    fetch(`/api/food-image?query=${encodeURIComponent(words)}`)
+      .then((r) => r.json())
+      .then((d) => { if (d.url) setMealImages((prev) => ({ ...prev, [name]: d.url })); })
+      .catch(() => {});
+  }
+
+  // Auto-fetch images for meals without photos
+  useEffect(() => {
+    meals.forEach((m) => { if (m.gericht_name && !mealImages[m.gericht_name]) fetchFoodImage(m.gericht_name); });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meals]);
 
   const mealsByType: Record<string, NutritionEntry[]> = {};
   meals.forEach((m) => { const t = m.mahlzeit_typ || "snack"; (mealsByType[t] ||= []).push(m); });
@@ -282,7 +299,7 @@ export default function ErnaehrungPage() {
           {MEAL_ORDER.map((type) => {
             const entries = mealsByType[type];
             if (entries?.length) {
-              return <div key={type}>{entries.map((e) => <MealCard key={e.id} entry={e} />)}</div>;
+              return <div key={type}>{entries.map((e) => <MealCard key={e.id} entry={e} pexelsImage={mealImages[e.gericht_name]} />)}</div>;
             }
             return (
               <button key={type} onClick={() => openModal(type)}

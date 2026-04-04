@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Syringe, Check, Clock, ChevronDown, ChevronUp, Camera, FileText, Edit3, Share2, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import { useUser } from "@/lib/UserContext";
 import { getTodaySupplements, getLatestBloodwork } from "@/lib/queries";
 import { SUPPLEMENT_SCHEDULE, SUPPLEMENT_STACK, BLOODWORK_MARKERS, COLORS } from "@/lib/constants";
@@ -38,6 +39,11 @@ const BW_MARKERS = [
   { key: "b12", label: "Vitamin B12", einheit: "pg/mL", min: 300, max: 900, group: "Vitamine" },
   { key: "ferritin", label: "Ferritin", einheit: "ng/mL", min: 30, max: 300, group: "Vitamine" },
   { key: "tsh", label: "TSH", einheit: "mIU/L", min: 0.4, max: 4, group: "Schilddruese" },
+  { key: "ft3", label: "fT3", einheit: "pg/mL", min: 2.3, max: 4.2, group: "Schilddruese" },
+  { key: "ft4", label: "fT4", einheit: "ng/dL", min: 0.8, max: 1.8, group: "Schilddruese" },
+  { key: "lh", label: "LH", einheit: "mIU/mL", min: 1.7, max: 8.6, group: "Hormone" },
+  { key: "fsh", label: "FSH", einheit: "mIU/mL", min: 1.5, max: 12.4, group: "Hormone" },
+  { key: "prolaktin", label: "Prolaktin", einheit: "ng/mL", min: 4.0, max: 15.2, group: "Hormone" },
 ];
 
 function getStatus(wert: number, min: number, max: number): "green" | "yellow" | "red" {
@@ -262,6 +268,35 @@ export default function SupplementsPage() {
 
           <AdaptationsCard />
           <SupplementAdvisor />
+
+          {/* Stack mit Restlaufzeit */}
+          <Card>
+            <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: "var(--text3)" }}>Dein Stack</p>
+            {SUPPLEMENT_STACK.filter((s) => !s.nur_maria || userKey === "maria").map((s) => {
+              // Parse dose count from dosis string
+              const doseMatch = s.dosis.match(/(\d+)/);
+              const dailyDose = doseMatch ? parseInt(doseMatch[1]) : 1;
+              const defaultPack = s.kategorie === "Aminosaeuren" ? 250 : s.kategorie === "Vitamine" ? 90 : 60;
+              const daysLeft = Math.round(defaultPack / dailyDose);
+              const barColor = daysLeft > 30 ? "#10B981" : daysLeft > 10 ? "#F59E0B" : "#EF4444";
+
+              return (
+                <div key={s.name} className="py-1.5" style={{ borderBottom: "1px solid var(--card-border)" }}>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <p className="text-xs font-medium" style={{ color: "var(--text)" }}>{s.name}</p>
+                      <p className="text-[10px]" style={{ color: "var(--text3)" }}>{s.dosis}</p>
+                    </div>
+                    <span className="text-[10px]" style={{ color: barColor }}>~{daysLeft}T</span>
+                  </div>
+                  <div className="w-full h-0.5 rounded-full mt-1" style={{ background: "var(--bar-bg)" }}>
+                    <div className="h-full rounded-full" style={{ width: `${Math.min((daysLeft / 90) * 100, 100)}%`, background: barColor }} />
+                  </div>
+                </div>
+              );
+            })}
+          </Card>
+
           <Disclaimer />
         </div>
       )}
@@ -311,6 +346,50 @@ export default function SupplementsPage() {
                 </Card>
               )}
             </>
+          )}
+
+          {/* TRT Pharmakokinetik */}
+          {userKey === "vincent" && (
+            <Card>
+              <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: "var(--text3)" }}>Geschaetzter Spiegel-Verlauf</p>
+              <ResponsiveContainer width="100%" height={180}>
+                <AreaChart data={(() => {
+                  // Generate 14-day PK curve from schema (Mi=3, Sa=6) with halflife 8 days
+                  const HL = 8; const DOSE = 60; const points = [];
+                  const now = new Date(); const today = now.getDay();
+                  for (let d = 0; d < 14; d++) {
+                    let level = 0;
+                    for (let inj = 0; inj < 8; inj++) {
+                      const injDay = d - inj * 3.5;
+                      if (injDay >= 0) level += DOSE * Math.exp(-0.693 * injDay / HL);
+                    }
+                    // Also use actual trt_log if available
+                    trtLogs.forEach((l) => {
+                      const daysAgo = (Date.now() - new Date(l.datum).getTime()) / 86400000;
+                      const offset = 14 - d;
+                      const t = daysAgo - offset;
+                      if (t >= 0 && t < 14) level += (l.dosis_mg || 60) * Math.exp(-0.693 * t / HL) * 0.3;
+                    });
+                    const date = new Date(now.getTime() - (13 - d) * 86400000);
+                    points.push({ day: `${date.getDate()}.${date.getMonth() + 1}`, level: Math.round(level * 10) / 10, isToday: d === 13 });
+                  }
+                  return points;
+                })()}>
+                  <defs>
+                    <linearGradient id="pkGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#7EE2B8" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#7EE2B8" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="day" tick={{ fontSize: 9 }} />
+                  <YAxis tick={{ fontSize: 9 }} domain={["auto", "auto"]} />
+                  <Tooltip />
+                  <Area type="monotone" dataKey="level" stroke="#7EE2B8" fill="url(#pkGrad)" strokeWidth={2} />
+                  <ReferenceLine x={new Date().getDate() + "." + (new Date().getMonth() + 1)} stroke="#F59E0B" strokeDasharray="4 4" />
+                </AreaChart>
+              </ResponsiveContainer>
+              <p className="text-[9px] text-center mt-1" style={{ color: "var(--text3)" }}>Basierend auf HWZ ~8 Tage, 2x 60mg/Woche</p>
+            </Card>
           )}
 
           {/* Peptides */}

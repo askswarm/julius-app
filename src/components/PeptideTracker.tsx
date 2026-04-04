@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { Syringe, Plus, AlertTriangle, Check } from "lucide-react";
 import { useUser } from "@/lib/UserContext";
-import { INJECTION_SITES, CATEGORY_COLORS, FREQUENCY_LABELS } from "@/lib/peptideDefaults";
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { INJECTION_SITES, CATEGORY_COLORS, FREQUENCY_LABELS, PEPTIDE_HALFLIVES } from "@/lib/peptideDefaults";
 import Card from "@/components/Card";
 import Toast from "@/components/Toast";
 import PeptideWizard from "@/components/PeptideWizard";
@@ -161,6 +162,43 @@ export default function PeptideTracker() {
                     {done ? <span className="flex items-center justify-center gap-1"><Check size={14} /> Heute erledigt</span> :
                       logging === v.peptide_name ? "..." : `Injiziert (${doseMcg}mcg / ${volMl.toFixed(2)}ml)`}
                   </button>
+
+                  {/* Decay curve */}
+                  {PEPTIDE_HALFLIVES[v.peptide_name] && (
+                    <div className="mt-2">
+                      <ResponsiveContainer width="100%" height={80}>
+                        <AreaChart data={(() => {
+                          const hl = PEPTIDE_HALFLIVES[v.peptide_name];
+                          const isLong = hl > 24;
+                          const steps = 24;
+                          const span = isLong ? hl * 3 : 48; // hours
+                          const pts = [];
+                          for (let i = 0; i <= steps; i++) {
+                            const t = (i / steps) * span;
+                            let level = 0;
+                            // Simulate 3 injections
+                            const interval = isLong ? hl * 1.5 : (v.frequency === "2x_daily" ? 12 : 24);
+                            for (let inj = 0; inj < 4; inj++) {
+                              const since = t - inj * interval;
+                              if (since >= 0) level += Math.exp(-0.693 * since / hl);
+                            }
+                            pts.push({ t: isLong ? `${Math.round(t / 24)}d` : `${Math.round(t)}h`, v: Math.round(level * 100) });
+                          }
+                          return pts;
+                        })()}>
+                          <defs>
+                            <linearGradient id={`decay-${v.id}`} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor={catColor} stopOpacity={0.3} />
+                              <stop offset="95%" stopColor={catColor} stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          <XAxis dataKey="t" tick={{ fontSize: 8 }} interval="preserveStartEnd" />
+                          <YAxis hide />
+                          <Area type="monotone" dataKey="v" stroke={catColor} fill={`url(#decay-${v.id})`} strokeWidth={1.5} />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
                 </div>
               );
             })}

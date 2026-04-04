@@ -25,6 +25,18 @@ export const PEPTIDE_PRESETS: PeptidePreset[] = [
   { name: "PT-141", category: "Sexual Health", typical_dose_mcg: 1000, frequency: "on_demand", timing: "2h_before", fasting_required: false, cycle_on_days: 0, cycle_off_days: 0, typical_vial_mg: 10, typical_recon_ml: 2, storage: "fridge", description: "Libido + sexuelle Funktion", stacking_notes: "Max 2x pro Woche, Uebelkeit moeglich" },
 ];
 
+// Half-lives in hours for decay curves
+export const PEPTIDE_HALFLIVES: Record<string, number> = {
+  "BPC-157": 4,
+  "TB-500": 8,
+  "GHK-Cu": 4,
+  "Epitalon": 3,
+  "CJC-1295 + Ipamorelin": 192, // CJC-DAC ~8 days
+  "Semaglutid": 168, // ~7 days
+  "NAD+ (SubQ)": 0.5,
+  "PT-141": 2,
+};
+
 export const CATEGORY_COLORS: Record<string, string> = {
   Healing: "#10B981",
   Longevity: "#7EE2B8",

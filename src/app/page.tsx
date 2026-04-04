@@ -6,6 +6,11 @@ import { de } from "date-fns/locale";
 import { Dumbbell, UtensilsCrossed, MessageCircle, TrendingUp, TrendingDown, Activity, Heart, Footprints, Flame } from "lucide-react";
 import Link from "next/link";
 import { useUser } from "@/lib/UserContext";
+import { isHalflife, appName } from "@/lib/appConfig";
+import { analyzeProtocol } from "@/lib/protocolEngine";
+import { getTodaySupplements, getLatestBloodwork } from "@/lib/queries";
+import { SUPPLEMENT_SCHEDULE } from "@/lib/constants";
+import { Syringe, AlertTriangle, Clock, Check } from "lucide-react";
 import { getTodayScores, getTodayMacros, getTodayTraining, getTrainingLoad, getTodayMacroAdjustment, getTodayOura, getOuraHistory } from "@/lib/queries";
 import { calculateDynamicKcal } from "@/lib/calorieLogic";
 import { matchTrainingImage } from "@/lib/images";
@@ -79,6 +84,22 @@ export default function HomePage() {
     return Math.round(cur - prev);
   }
 
+  // Halflife-specific data
+  const [bloodwork, setBloodwork] = useState<Record<string, { wert: number; datum: string }>>({});
+  const [supplements, setSupplements] = useState<string[]>([]);
+  const [alerts, setAlerts] = useState<{ type: string; message: string; action: string }[]>([]);
+  const [trtLogs, setTrtLogs] = useState<{ datum: string; dosis_mg: number; injection_site: string }[]>([]);
+
+  useEffect(() => {
+    if (!isHalflife) return;
+    getLatestBloodwork(user.id).then((bw) => {
+      setBloodwork(bw);
+      setAlerts(analyzeProtocol(bw, true, oura as { sleep_score?: number | null; readiness_score?: number | null; temperature_deviation?: number | null } | null, user.geschlecht));
+    });
+    getTodaySupplements(user.id).then(setSupplements);
+    fetch(`/api/trt?chatId=${user.id}`).then((r) => r.json()).then((d) => setTrtLogs(d.logs || [])).catch(() => {});
+  }, [user.id, user.geschlecht, oura]);
+
   const readinessAdvice = (scores?.readiness ?? 80) >= 75
     ? "Volle Intensitaet moeglich"
     : (scores?.readiness ?? 80) >= 60
@@ -86,6 +107,158 @@ export default function HomePage() {
     : "Ruhe empfohlen";
   const readinessColor = (scores?.readiness ?? 80) >= 75 ? "rgba(255,255,255,0.75)" : "#F59E0B";
 
+  // Halflife next supplement slot
+  const currentHour = today.getHours() + today.getMinutes() / 60;
+  const SLOT_TIMES: Record<string, number> = { nuechtern: 7, fruehstueck: 9, mittag: 13, abend: 19 };
+  const nextSlot = Object.entries(SLOT_TIMES).find(([key, time]) => time > currentHour && !supplements.includes(key));
+
+  const BW_KEY_MARKERS = [
+    { key: "haematokrit", label: "HKT", max: 52 },
+    { key: "testosteron_gesamt", label: "Total T", max: 1000 },
+    { key: "oestradiol", label: "E2", max: 40 },
+    { key: "vitamin_d", label: "Vit D", max: 80 },
+    { key: "hscrp", label: "hsCRP", max: 1 },
+    { key: "haemoglobin", label: "Hb", max: 17 },
+  ];
+
+  // === HALFLIFE HOME ===
+  if (isHalflife) {
+    const dayOfWeek = today.getDay();
+    const isTrtDay = [3, 6].includes(dayOfWeek);
+    const nextTrtDays = dayOfWeek <= 3 ? 3 - dayOfWeek : dayOfWeek <= 6 ? 6 - dayOfWeek : 3 + 7 - dayOfWeek;
+    const nextTrtDate = new Date(today.getTime() + nextTrtDays * 86400000);
+
+    return (
+      <div className="flex flex-col gap-4 -mx-4 -mt-5 px-4 pt-4">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[10px] uppercase" style={{ color: "#4a4a50", letterSpacing: 1.5 }}>
+              {format(today, "EEEE, d. MMMM", { locale: de })}
+            </p>
+          </div>
+          <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold"
+            style={{ border: "1.5px solid #2dd4a0", color: "#2dd4a0" }}>
+            {user.name[0]}{user.name.split(" ")[1]?.[0] || ""}
+          </div>
+        </div>
+
+        {/* 1. Next Injection */}
+        <div className="p-4 rounded-xl" style={{ background: "#111114", border: "0.5px solid #1a1a1e" }}>
+          <p className="text-[10px] uppercase mb-2" style={{ color: "#4a4a50", letterSpacing: 1.5 }}>Naechste Injektion</p>
+          {isTrtDay ? (
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-lg font-bold" style={{ color: "#e8e8ec" }}>Heute — 60mg</p>
+                <p className="text-xs" style={{ color: "#6b6b70" }}>Test Cypionate · SubQ · 0.2ml</p>
+              </div>
+              <Link href="/supplements?tab=Protokolle">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "rgba(45,212,160,0.1)", border: "1px solid rgba(45,212,160,0.2)" }}>
+                  <Syringe size={18} style={{ color: "#2dd4a0" }} />
+                </div>
+              </Link>
+            </div>
+          ) : (
+            <div>
+              <p className="text-sm font-medium" style={{ color: "#e8e8ec" }}>
+                {nextTrtDays === 0 ? "Heute" : format(nextTrtDate, "EEEE, d. MMM", { locale: de })}
+              </p>
+              <p className="text-xs" style={{ color: "#6b6b70" }}>In {nextTrtDays} Tagen · 60mg SubQ</p>
+            </div>
+          )}
+        </div>
+
+        {/* 2. Oura Scores */}
+        {scores && (
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col items-center p-4 rounded-xl" style={{ background: "#111114", border: "0.5px solid #1a1a1e" }}>
+              <ScoreRing value={scores.readiness ?? null} label="Readiness" color="#2dd4a0" size={72} />
+            </div>
+            <div className="flex flex-col items-center p-4 rounded-xl" style={{ background: "#111114", border: "0.5px solid #1a1a1e" }}>
+              <ScoreRing value={scores.sleep ?? null} label="Sleep" color="#79C0FF" size={72} />
+            </div>
+          </div>
+        )}
+
+        {/* Oura metrics row */}
+        {oura && (
+          <div className="flex gap-0 rounded-xl overflow-hidden" style={{ background: "#111114", border: "0.5px solid #1a1a1e" }}>
+            {[
+              { label: "HRV", value: oura.avg_hrv ? Math.round(oura.avg_hrv) : null, unit: "ms" },
+              { label: "Puls", value: oura.lowest_hr || oura.resting_hr || null, unit: "bpm" },
+              { label: "Steps", value: oura.steps || null, unit: "" },
+            ].filter((m) => m.value != null).map((m, i, arr) => (
+              <div key={m.label} className="flex-1 text-center py-3"
+                style={{ borderRight: i < arr.length - 1 ? "0.5px solid #1a1a1e" : "none" }}>
+                <p className="text-sm font-bold" style={{ color: "#e8e8ec" }}>{typeof m.value === "number" && m.value > 999 ? `${(m.value / 1000).toFixed(1)}k` : m.value}</p>
+                <p className="text-[9px]" style={{ color: "#6b6b70" }}>{m.label} {m.unit}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 3. Protocol Alerts */}
+        {alerts.length > 0 && (
+          <div>
+            <p className="text-[10px] uppercase mb-2" style={{ color: "#4a4a50", letterSpacing: 1.5 }}>Alerts</p>
+            {alerts.slice(0, 2).map((a, i) => (
+              <div key={i} className="flex items-start gap-2 p-3 rounded-xl mb-2" style={{ background: "rgba(245,158,11,0.06)", border: "0.5px solid rgba(245,158,11,0.15)" }}>
+                <AlertTriangle size={14} style={{ color: "#F59E0B", marginTop: 2, flexShrink: 0 }} />
+                <div>
+                  <p className="text-xs font-medium" style={{ color: "#e8e8ec" }}>{a.message}</p>
+                  <p className="text-[10px]" style={{ color: "#6b6b70" }}>{a.action}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 4. Bloodwork Snapshot */}
+        {Object.keys(bloodwork).length > 0 && (
+          <div>
+            <p className="text-[10px] uppercase mb-2" style={{ color: "#4a4a50", letterSpacing: 1.5 }}>Blutwerte</p>
+            <div className="grid grid-cols-3 gap-2">
+              {BW_KEY_MARKERS.filter((m) => bloodwork[m.key]).map((m) => {
+                const v = bloodwork[m.key].wert;
+                const ok = v <= m.max;
+                return (
+                  <div key={m.key} className="p-2.5 rounded-xl text-center" style={{ background: "#111114", border: "0.5px solid #1a1a1e" }}>
+                    <p className="text-sm font-bold" style={{ color: ok ? "#2dd4a0" : "#F59E0B" }}>{v}</p>
+                    <p className="text-[9px]" style={{ color: "#6b6b70" }}>{m.label}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* 5. Next Supplement */}
+        <div className="p-4 rounded-xl" style={{ background: "#111114", border: "0.5px solid #1a1a1e" }}>
+          <p className="text-[10px] uppercase mb-2" style={{ color: "#4a4a50", letterSpacing: 1.5 }}>Supplements</p>
+          {nextSlot ? (
+            <div className="flex items-center gap-3">
+              <Clock size={16} style={{ color: "#2dd4a0" }} />
+              <div>
+                <p className="text-sm font-medium" style={{ color: "#e8e8ec" }}>
+                  {SUPPLEMENT_SCHEDULE[nextSlot[0] as keyof typeof SUPPLEMENT_SCHEDULE]?.time} {SUPPLEMENT_SCHEDULE[nextSlot[0] as keyof typeof SUPPLEMENT_SCHEDULE]?.label}
+                </p>
+                <p className="text-[10px]" style={{ color: "#6b6b70" }}>
+                  {(SUPPLEMENT_SCHEDULE[nextSlot[0] as keyof typeof SUPPLEMENT_SCHEDULE]?.items || []).join(", ")}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Check size={16} style={{ color: "#2dd4a0" }} />
+              <p className="text-xs" style={{ color: "#2dd4a0" }}>Alle Einnahmen erledigt</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // === JULIUS HOME (unchanged) ===
   return (
     <div className="flex flex-col gap-4 -mx-4 -mt-5">
       {/* ZONE 1 — HERO with video */}

@@ -5,6 +5,7 @@ import { Mic, Bell, Camera, Moon, Sun, Download, Trash2, LogOut, ChevronRight, S
 import Link from "next/link";
 import { useUser } from "@/lib/UserContext";
 import { useTheme } from "@/lib/ThemeContext";
+import { isHalflife } from "@/lib/appConfig";
 import { supabase } from "@/lib/supabase";
 import Card from "@/components/Card";
 import Toast from "@/components/Toast";
@@ -311,7 +312,7 @@ export default function EinstellungenPage() {
       {/* App */}
       <Card>
         <p className="text-[11px] font-semibold uppercase tracking-[1px] mb-3" style={{ color: "var(--text2)" }}>App</p>
-        <div className="flex items-center justify-between py-2.5">
+        {!isHalflife && <div className="flex items-center justify-between py-2.5">
           <span className="text-sm" style={{ color: "var(--text)" }}>Erscheinungsbild</span>
           <div className="flex rounded-full p-0.5" style={{ background: "var(--subtle-bg)", border: "1px solid var(--card-border)" }}>
             <button onClick={() => theme === "dark" && toggleTheme()}
@@ -325,7 +326,7 @@ export default function EinstellungenPage() {
               <Moon size={12} /> Dark
             </button>
           </div>
-        </div>
+        </div>}
         <div className="flex items-center justify-between py-2.5">
           <span className="text-sm" style={{ color: "var(--text)" }}>Sprache</span>
           <span className="text-xs" style={{ color: "var(--text3)" }}>Deutsch</span>

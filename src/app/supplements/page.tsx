@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Syringe, Check, Clock, ChevronDown, ChevronUp, Camera, FileText, Edit3, Share2, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import { useUser } from "@/lib/UserContext";
@@ -54,9 +55,16 @@ function getStatus(wert: number, min: number, max: number): "green" | "yellow" |
 }
 const STATUS_COLORS = { green: "#10B981", yellow: "#F59E0B", red: "#EF4444" };
 
-export default function SupplementsPage() {
+function SupplementsInner() {
   const { user, userKey } = useUser();
-  const [tab, setTab] = useState<Tab>("Supplements");
+  const searchParams = useSearchParams();
+  const urlTab = searchParams.get("tab") as Tab | null;
+  const [tab, setTab] = useState<Tab>(urlTab && TABS.includes(urlTab as Tab) ? urlTab as Tab : "Supplements");
+
+  // Sync tab with URL param changes
+  useEffect(() => {
+    if (urlTab && TABS.includes(urlTab as Tab) && urlTab !== tab) setTab(urlTab as Tab);
+  }, [urlTab]); // eslint-disable-line react-hooks/exhaustive-deps
   const [takenSlots, setTakenSlots] = useState<string[]>([]);
   const [bloodwork, setBloodwork] = useState<Record<string, { wert: number; datum: string }>>({});
   const [expandedSlot, setExpandedSlot] = useState<string | null>(null);
@@ -592,4 +600,8 @@ export default function SupplementsPage() {
       <Toast message={toast} visible={!!toast} onHide={() => setToast("")} />
     </div>
   );
+}
+
+export default function SupplementsPage() {
+  return <Suspense fallback={<div />}><SupplementsInner /></Suspense>;
 }

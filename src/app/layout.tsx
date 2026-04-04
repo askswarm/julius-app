@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { DM_Sans } from "next/font/google";
 import "./globals.css";
 import { UserProvider } from "@/lib/UserContext";
@@ -9,6 +9,15 @@ import PushSetup from "@/components/PushSetup";
 import AppShell from "@/components/AppShell";
 
 const font = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
+};
 
 export const metadata: Metadata = {
   title: "Julius — Longevity Dashboard",

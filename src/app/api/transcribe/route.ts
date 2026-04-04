@@ -15,7 +15,8 @@ export async function POST(req: NextRequest) {
     }
 
     const whisperForm = new FormData();
-    whisperForm.append("file", audio, "audio.webm");
+    const name = (audio as File).name || "audio.webm";
+    whisperForm.append("file", audio, name);
     whisperForm.append("model", "whisper-1");
     whisperForm.append("language", "de");
 

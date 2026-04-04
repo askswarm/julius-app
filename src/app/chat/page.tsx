@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Camera, Send, ArrowLeft, Search, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Search, X, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useUser } from "@/lib/UserContext";
-import VoiceRecorder from "@/components/VoiceRecorder";
+import ChatInput from "@/components/ChatInput";
 
 interface Message {
   id: string;
@@ -44,17 +44,14 @@ function highlightText(text: string, query: string): React.ReactNode {
 export default function ChatPage() {
   const { user } = useUser();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [hasMore, setHasMore] = useState(false);
   const [offset, setOffset] = useState(0);
-  const [pendingImage, setPendingImage] = useState<string | null>(null);
-  const [voiceError, setVoiceError] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const initialScrollDone = useRef(false);
 
   // Load history on mount
@@ -113,22 +110,19 @@ export default function ChatPage() {
     }
   }
 
-  async function sendMessage(text?: string, image?: string) {
-    const msg = text || input.trim();
-    if (!msg && !image) return;
+  async function sendMessage(text: string) {
+    const msg = text.trim();
+    if (!msg) return;
 
     const now = new Date().toISOString();
     const userMsg: Message = {
       id: "tmp-" + crypto.randomUUID(),
       role: "user",
-      content: msg || "[Foto]",
-      image: image || pendingImage || undefined,
+      content: msg,
       created_at: now,
     };
 
     setMessages((prev) => [...prev, userMsg]);
-    setInput("");
-    setPendingImage(null);
     setLoading(true);
 
     try {
@@ -136,9 +130,8 @@ export default function ChatPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: msg || undefined,
+          message: msg,
           chatId: user.id,
-          image: image || pendingImage || undefined,
         }),
       });
 
@@ -179,12 +172,22 @@ export default function ChatPage() {
     }
   }
 
-  function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
+  // Keyboard handling: adjust container height when virtual keyboard opens
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    function onResize() {
+      if (containerRef.current && vv) {
+        containerRef.current.style.height = `${vv.height}px`;
+        requestAnimationFrame(() => {
+          if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        });
+      }
     }
-  }
+    vv.addEventListener("resize", onResize);
+    vv.addEventListener("scroll", onResize);
+    return () => { vv.removeEventListener("resize", onResize); vv.removeEventListener("scroll", onResize); };
+  }, []);
 
   // Filter messages by search
   const displayed = searchQuery.trim()
@@ -195,7 +198,7 @@ export default function ChatPage() {
   let lastDate = "";
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col md:left-[72px]" style={{ background: "var(--bg)", touchAction: "manipulation" }}>
+    <div ref={containerRef} className="fixed inset-0 z-50 flex flex-col md:left-[72px]" style={{ background: "var(--bg)", touchAction: "manipulation", height: "100dvh", overflow: "hidden" }}>
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor: "var(--card-border)", background: "var(--card)", paddingTop: "max(12px, env(safe-area-inset-top))" }}>
         <Link href="/" className="p-1">
@@ -234,7 +237,7 @@ export default function ChatPage() {
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 md:px-6 py-4 flex flex-col gap-3">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden px-4 md:px-6 py-4 flex flex-col gap-3" style={{ WebkitOverflowScrolling: "touch" }}>
         {/* Load older button */}
         {hasMore && !searchQuery && (
           <button type="button" onClick={loadOlder} disabled={loadingHistory}
@@ -333,64 +336,8 @@ export default function ChatPage() {
         )}
       </div>
 
-      {/* Voice error toast */}
-      {voiceError && (
-        <div className="px-4 md:px-6 py-2" style={{ background: "rgba(239,68,68,0.1)" }}>
-          <p className="text-xs" style={{ color: "#EF4444" }}>{voiceError}</p>
-        </div>
-      )}
-
-      {/* Pending image preview */}
-      {pendingImage && (
-        <div className="px-4 md:px-6 py-2" style={{ background: "var(--card)", borderTop: "1px solid var(--card-border)" }}>
-          <div className="relative inline-block">
-            <img src={pendingImage} alt="" className="h-16 rounded-lg object-cover" />
-            <button type="button" onClick={() => setPendingImage(null)}
-              className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center">
-              x
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Input */}
-      <div className="px-3 md:px-6 pt-3 flex items-end gap-2" style={{ background: "var(--card)", borderTop: "1px solid var(--card-border)", paddingBottom: "max(12px, env(safe-area-inset-bottom))", position: "relative", zIndex: 10 }}>
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = () => setPendingImage(reader.result as string);
-          reader.readAsDataURL(file);
-          e.target.value = "";
-        }} />
-
-        <button type="button" onClick={() => fileRef.current?.click()} className="p-2.5 rounded-full transition-colors flex-shrink-0" style={{ color: "var(--text2)" }}>
-          <Camera size={22} />
-        </button>
-
-        <div className="flex-1 flex items-end rounded-2xl px-4 py-2.5" style={{ background: "var(--input-bg)", border: "1px solid var(--input-border)" }}>
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Frag Julius..."
-            rows={1}
-            className="flex-1 bg-transparent resize-none outline-none max-h-32"
-            style={{ color: "var(--input-text)", fontSize: "16px", lineHeight: "1.4", touchAction: "manipulation" }}
-          />
-        </div>
-
-        {input.trim() || pendingImage ? (
-          <button type="button" onClick={() => sendMessage()} className="p-2.5 rounded-full flex-shrink-0" style={{ background: "var(--grad-teal)" }}>
-            <Send size={18} style={{ color: "#0D1117" }} />
-          </button>
-        ) : (
-          <VoiceRecorder
-            onTranscript={(text) => sendMessage(text)}
-            onError={(msg) => { setVoiceError(msg); setTimeout(() => setVoiceError(""), 3000); }}
-          />
-        )}
-      </div>
+      {/* Chat Input */}
+      <ChatInput onSend={sendMessage} isLoading={loading} />
     </div>
   );
 }

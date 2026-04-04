@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { isHalflife } from "./appConfig";
 
 interface ThemeContextType {
   theme: "light" | "dark";
@@ -13,6 +14,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
+    if (isHalflife) {
+      setTheme("dark");
+      document.documentElement.setAttribute("data-theme", "dark");
+      return;
+    }
     const saved = localStorage.getItem("julius-theme") as "light" | "dark" | null;
     const initial = saved || "light";
     setTheme(initial);
@@ -20,6 +26,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   function toggleTheme() {
+    if (isHalflife) return; // locked to dark
     const next = theme === "light" ? "dark" : "light";
     setTheme(next);
     localStorage.setItem("julius-theme", next);

@@ -6,7 +6,7 @@ import { de } from "date-fns/locale";
 import { Dumbbell, UtensilsCrossed, MessageCircle, TrendingUp, TrendingDown, Activity, Heart, Footprints, Flame } from "lucide-react";
 import Link from "next/link";
 import { useUser } from "@/lib/UserContext";
-import { isHalflife, appName } from "@/lib/appConfig";
+import { isHalflife, appName, appAccentColor } from "@/lib/appConfig";
 import { analyzeProtocol } from "@/lib/protocolEngine";
 import { getTodaySupplements, getLatestBloodwork } from "@/lib/queries";
 import { SUPPLEMENT_SCHEDULE } from "@/lib/constants";
@@ -138,13 +138,13 @@ export default function HomePage() {
             </p>
           </div>
           <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold"
-            style={{ border: "1.5px solid #2dd4a0", color: "#2dd4a0" }}>
+            style={{ border: "1.5px solid #E8893C", color: "#E8893C" }}>
             {user.name[0]}{user.name.split(" ")[1]?.[0] || ""}
           </div>
         </div>
 
         {/* 1. Next Injection */}
-        <div className="p-4 rounded-xl" style={{ background: "#111114", border: "0.5px solid #1a1a1e" }}>
+        <div className="p-4 rounded-xl" style={{ background: "#0c0c0f" }}>
           <p className="text-[10px] uppercase mb-2" style={{ color: "#4a4a50", letterSpacing: 1.5 }}>Naechste Injektion</p>
           {isTrtDay ? (
             <div className="flex items-center justify-between">
@@ -153,8 +153,8 @@ export default function HomePage() {
                 <p className="text-xs" style={{ color: "#6b6b70" }}>Test Cypionate · SubQ · 0.2ml</p>
               </div>
               <Link href="/supplements?tab=Protokolle">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "rgba(45,212,160,0.1)", border: "1px solid rgba(45,212,160,0.2)" }}>
-                  <Syringe size={18} style={{ color: "#2dd4a0" }} />
+                <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "rgba(232,137,60,0.10)", border: "1px solid rgba(232,137,60,0.20)" }}>
+                  <Syringe size={18} style={{ color: "#E8893C" }} />
                 </div>
               </Link>
             </div>
@@ -171,10 +171,10 @@ export default function HomePage() {
         {/* 2. Oura Scores */}
         {scores && (
           <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col items-center p-4 rounded-xl" style={{ background: "#111114", border: "0.5px solid #1a1a1e" }}>
-              <ScoreRing value={scores.readiness ?? null} label="Readiness" color="#2dd4a0" size={72} />
+            <div className="flex flex-col items-center p-4 rounded-xl" style={{ background: "#0c0c0f" }}>
+              <ScoreRing value={scores.readiness ?? null} label="Readiness" color={appAccentColor} size={72} />
             </div>
-            <div className="flex flex-col items-center p-4 rounded-xl" style={{ background: "#111114", border: "0.5px solid #1a1a1e" }}>
+            <div className="flex flex-col items-center p-4 rounded-xl" style={{ background: "#0c0c0f" }}>
               <ScoreRing value={scores.sleep ?? null} label="Sleep" color="#79C0FF" size={72} />
             </div>
           </div>
@@ -182,14 +182,14 @@ export default function HomePage() {
 
         {/* Oura metrics row */}
         {oura && (
-          <div className="flex gap-0 rounded-xl overflow-hidden" style={{ background: "#111114", border: "0.5px solid #1a1a1e" }}>
+          <div className="flex gap-0 rounded-xl overflow-hidden" style={{ background: "#0c0c0f" }}>
             {[
               { label: "HRV", value: oura.avg_hrv ? Math.round(oura.avg_hrv) : null, unit: "ms" },
               { label: "Puls", value: oura.lowest_hr || oura.resting_hr || null, unit: "bpm" },
               { label: "Steps", value: oura.steps || null, unit: "" },
             ].filter((m) => m.value != null).map((m, i, arr) => (
               <div key={m.label} className="flex-1 text-center py-3"
-                style={{ borderRight: i < arr.length - 1 ? "0.5px solid #1a1a1e" : "none" }}>
+                style={{ borderRight: i < arr.length - 1 ? "0.5px solid #111114" : "none" }}>
                 <p className="text-sm font-bold" style={{ color: "#e8e8ec" }}>{typeof m.value === "number" && m.value > 999 ? `${(m.value / 1000).toFixed(1)}k` : m.value}</p>
                 <p className="text-[9px]" style={{ color: "#6b6b70" }}>{m.label} {m.unit}</p>
               </div>
@@ -202,8 +202,8 @@ export default function HomePage() {
           <div>
             <p className="text-[10px] uppercase mb-2" style={{ color: "#4a4a50", letterSpacing: 1.5 }}>Alerts</p>
             {alerts.slice(0, 2).map((a, i) => (
-              <div key={i} className="flex items-start gap-2 p-3 rounded-xl mb-2" style={{ background: "rgba(245,158,11,0.06)", border: "0.5px solid rgba(245,158,11,0.15)" }}>
-                <AlertTriangle size={14} style={{ color: "#F59E0B", marginTop: 2, flexShrink: 0 }} />
+              <div key={i} className="flex items-start gap-2 p-3 rounded-xl mb-2" style={{ background: "rgba(232,137,60,0.06)", border: "none" }}>
+                <AlertTriangle size={14} style={{ color: "#E8893C", marginTop: 2, flexShrink: 0 }} />
                 <div>
                   <p className="text-xs font-medium" style={{ color: "#e8e8ec" }}>{a.message}</p>
                   <p className="text-[10px]" style={{ color: "#6b6b70" }}>{a.action}</p>
@@ -222,8 +222,8 @@ export default function HomePage() {
                 const v = bloodwork[m.key].wert;
                 const ok = v <= m.max;
                 return (
-                  <div key={m.key} className="p-2.5 rounded-xl text-center" style={{ background: "#111114", border: "0.5px solid #1a1a1e" }}>
-                    <p className="text-sm font-bold" style={{ color: ok ? "#2dd4a0" : "#F59E0B" }}>{v}</p>
+                  <div key={m.key} className="p-2.5 rounded-xl text-center" style={{ background: "#0c0c0f" }}>
+                    <p className="text-sm font-bold" style={{ color: ok ? "#34d399" : "#E8893C" }}>{v}</p>
                     <p className="text-[9px]" style={{ color: "#6b6b70" }}>{m.label}</p>
                   </div>
                 );
@@ -233,11 +233,11 @@ export default function HomePage() {
         )}
 
         {/* 5. Next Supplement */}
-        <div className="p-4 rounded-xl" style={{ background: "#111114", border: "0.5px solid #1a1a1e" }}>
+        <div className="p-4 rounded-xl" style={{ background: "#0c0c0f" }}>
           <p className="text-[10px] uppercase mb-2" style={{ color: "#4a4a50", letterSpacing: 1.5 }}>Supplements</p>
           {nextSlot ? (
             <div className="flex items-center gap-3">
-              <Clock size={16} style={{ color: "#2dd4a0" }} />
+              <Clock size={16} style={{ color: "var(--accent)" }} />
               <div>
                 <p className="text-sm font-medium" style={{ color: "#e8e8ec" }}>
                   {SUPPLEMENT_SCHEDULE[nextSlot[0] as keyof typeof SUPPLEMENT_SCHEDULE]?.time} {SUPPLEMENT_SCHEDULE[nextSlot[0] as keyof typeof SUPPLEMENT_SCHEDULE]?.label}
@@ -249,8 +249,8 @@ export default function HomePage() {
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <Check size={16} style={{ color: "#2dd4a0" }} />
-              <p className="text-xs" style={{ color: "#2dd4a0" }}>Alle Einnahmen erledigt</p>
+              <Check size={16} style={{ color: "var(--accent)" }} />
+              <p className="text-xs" style={{ color: "var(--accent)" }}>Alle Einnahmen erledigt</p>
             </div>
           )}
         </div>

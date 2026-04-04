@@ -47,7 +47,7 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
                 style={{
                   width: 4 + i * 2,
                   height: 4 + i * 2,
-                  background: "#7EE2B8",
+                  background: isHalflife ? "#E8893C" : "#7EE2B8",
                   left: `${15 + i * 14}%`,
                   bottom: 0,
                 }}
@@ -61,7 +61,7 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
             animate={{ scale: 1.8, opacity: 0 }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
             className="absolute rounded-full"
-            style={{ width: 80, height: 80, border: "2px solid #7EE2B8", zIndex: 1 }}
+            style={{ width: 80, height: 80, border: `2px solid ${isHalflife ? "#E8893C" : "#7EE2B8"}`, zIndex: 1 }}
           />
 
           {/* Logo */}
@@ -72,12 +72,12 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
             className="relative z-10 rounded-full flex items-center justify-center"
             style={{
               width: 80, height: 80,
-              background: "linear-gradient(135deg, #2EA67A, #7EE2B8)",
+              background: isHalflife ? "linear-gradient(135deg, #C06A20, #E8893C)" : "linear-gradient(135deg, #2EA67A, #7EE2B8)",
               boxShadow: "0 0 40px rgba(126,226,184,0.3)",
             }}
           >
             {isHalflife
-              ? <span style={{ fontSize: 24, fontWeight: 600, color: "#e8e8ec", letterSpacing: -0.5 }}>h<span style={{ color: "#2dd4a0" }}>.</span></span>
+              ? <span style={{ fontSize: 24, fontWeight: 600, color: "#e8e8ec", letterSpacing: -0.5 }}>h<span style={{ color: "#E8893C" }}>.</span></span>
               : <span style={{ fontSize: 36, fontWeight: 700, color: "#0D1117" }}>J</span>
             }
           </motion.div>
@@ -90,7 +90,7 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
             className="relative z-10"
             style={{ color: "#E6EDF3", fontSize: 28, fontWeight: 600, marginTop: 20, letterSpacing: isHalflife ? -0.5 : 2 }}
           >
-            {isHalflife ? <>{appName}<span style={{ color: "#2dd4a0" }}>.</span></> : appName}
+            {isHalflife ? <>{appName}<span style={{ color: "#E8893C" }}>.</span></> : appName}
           </motion.p>
 
           {/* Subtitle */}
@@ -99,7 +99,7 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8, duration: 0.5 }}
             className="relative z-10"
-            style={{ color: "#7EE2B8", fontSize: 14, marginTop: 8, letterSpacing: 3, textTransform: isHalflife ? "lowercase" : "uppercase" }}
+            style={{ color: isHalflife ? "#E8893C" : "#7EE2B8", fontSize: 14, marginTop: 8, letterSpacing: 3, textTransform: isHalflife ? "lowercase" : "uppercase" }}
           >
             {appTagline}
           </motion.p>

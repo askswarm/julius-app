@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { Syringe, Check, Clock, ChevronDown, ChevronUp, Camera, FileText, Edit3, Share2, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import { useUser } from "@/lib/UserContext";
+import { appAccentColor } from "@/lib/appConfig";
 import { getTodaySupplements, getLatestBloodwork } from "@/lib/queries";
 import { SUPPLEMENT_SCHEDULE, SUPPLEMENT_STACK, BLOODWORK_MARKERS, COLORS } from "@/lib/constants";
 import { analyzeProtocol } from "@/lib/protocolEngine";
@@ -377,14 +378,14 @@ export default function SupplementsPage() {
                 })()}>
                   <defs>
                     <linearGradient id="pkGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#7EE2B8" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#7EE2B8" stopOpacity={0} />
+                      <stop offset="5%" stopColor={appAccentColor} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={appAccentColor} stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <XAxis dataKey="day" tick={{ fontSize: 9 }} />
                   <YAxis tick={{ fontSize: 9 }} domain={["auto", "auto"]} />
                   <Tooltip />
-                  <Area type="monotone" dataKey="level" stroke="#7EE2B8" fill="url(#pkGrad)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="level" stroke={appAccentColor} fill="url(#pkGrad)" strokeWidth={2} />
                   <ReferenceLine x={new Date().getDate() + "." + (new Date().getMonth() + 1)} stroke="#F59E0B" strokeDasharray="4 4" />
                 </AreaChart>
               </ResponsiveContainer>

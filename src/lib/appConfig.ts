@@ -3,4 +3,4 @@ export const isHalflife = APP_MODE === "halflife";
 export const isJulius = APP_MODE === "julius" || APP_MODE === "";
 export const appName = isHalflife ? "halflife" : "Julius";
 export const appTagline = isHalflife ? "your protocol, optimized" : "Your Protocol Coach";
-export const appAccentColor = "#2dd4a0";
+export const appAccentColor = isHalflife ? "#E8893C" : "#2dd4a0";

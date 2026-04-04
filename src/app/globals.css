@@ -149,26 +149,42 @@ button { -webkit-user-select: none; user-select: none; -webkit-touch-callout: no
   .ken-burns { animation: none !important; }
 }
 
-/* Halflife mode — dark-only protocol app */
+/* Halflife mode — dark-only, amber/orange, borderless */
 body.halflife-mode {
-  background-color: #0a0a0c !important;
+  background-color: #050506 !important;
   color: #e8e8ec !important;
 }
-body.halflife-mode [data-theme] {
-  --bg: #0a0a0c;
-  --card: #111114;
-  --card-border: #1a1a1e;
+body.halflife-mode, body.halflife-mode [data-theme] {
+  --bg: #050506;
+  --card: #0c0c0f;
+  --card-border: transparent;
   --text: #e8e8ec;
-  --text2: #9a9aa0;
-  --text3: #6b6b70;
-  --accent: #2dd4a0;
-  --nav-bg: #0a0a0c;
+  --text2: #a0a0a8;
+  --text3: #5a5a62;
+  --accent: #E8893C;
+  --accent2: #F0A050;
+  --warn: #E8893C;
+  --danger: #e05050;
+  --orange: #E8893C;
+  --nav-bg: #050506;
   --nav-border: transparent;
-  --input-bg: #111114;
+  --nav-active: #E8893C;
+  --nav-inactive: #3a3a42;
+  --input-bg: #0c0c0f;
   --input-text: #e8e8ec;
   --input-border: #1a1a1e;
-  --bar-bg: #1a1a1e;
-  --subtle-bg: #111114;
-  --bubble-user: rgba(45,212,160,0.1);
-  --bubble-bot: #111114;
+  --bar-bg: #111114;
+  --ring-bg: rgba(255,255,255,0.03);
+  --subtle-bg: #0c0c0f;
+  --bubble-user: rgba(232,137,60,0.10);
+  --bubble-bot: #0c0c0f;
+  --overlay: rgba(0,0,0,0.8);
+  --grad-teal: linear-gradient(135deg, #C06A20, #E8893C);
+  --glow: 0 0 20px rgba(232,137,60,0.08);
+}
+body.halflife-mode .rounded-\[20px\],
+body.halflife-mode .rounded-2xl,
+body.halflife-mode .rounded-xl {
+  border-color: transparent !important;
+  border-radius: 16px;
 }

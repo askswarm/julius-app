@@ -48,7 +48,7 @@ export default function BottomNav() {
           )}
           {tabs.map((t) => {
             const active = path === t.href || (t.href.includes("?") && path === t.href.split("?")[0]);
-            const activeColor = isHalflife ? "#2dd4a0" : "var(--nav-active)";
+            const activeColor = isHalflife ? "#E8893C" : "var(--nav-active)";
             const inactiveColor = isHalflife ? "#6b6b70" : "var(--nav-inactive)";
             return (
               <Link key={t.label} href={t.href}

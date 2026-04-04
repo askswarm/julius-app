@@ -11,6 +11,7 @@ import Card from "@/components/Card";
 import Toast from "@/components/Toast";
 import SupplementAdvisor from "@/components/SupplementAdvisor";
 import AdaptationsCard from "@/components/AdaptationsCard";
+import Disclaimer from "@/components/Disclaimer";
 import PeptideTracker from "@/components/PeptideTracker";
 import BodyMap, { getRecommendedSite, SITE_LABELS, SITE_COLORS } from "@/components/BodyMap";
 
@@ -261,6 +262,7 @@ export default function SupplementsPage() {
 
           <AdaptationsCard />
           <SupplementAdvisor />
+          <Disclaimer />
         </div>
       )}
 
@@ -327,6 +329,7 @@ export default function SupplementsPage() {
                   </div>
                 </div>
               ))}
+              <Disclaimer />
             </Card>
           )}
         </div>
@@ -373,6 +376,7 @@ export default function SupplementsPage() {
                           <p className="text-xs" style={{ color: "var(--text2)" }}>{r.text}</p>
                         </div>
                       ))}
+                      <Disclaimer />
                     </Card>
                   )}
                 </>

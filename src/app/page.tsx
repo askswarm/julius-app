@@ -123,136 +123,66 @@ export default function HomePage() {
 
   // === HALFLIFE HOME ===
   if (isHalflife) {
-    const dayOfWeek = today.getDay();
-    const isTrtDay = [3, 6].includes(dayOfWeek);
-    const nextTrtDays = dayOfWeek <= 3 ? 3 - dayOfWeek : dayOfWeek <= 6 ? 6 - dayOfWeek : 3 + 7 - dayOfWeek;
-    const nextTrtDate = new Date(today.getTime() + nextTrtDays * 86400000);
-
+    const isTrtDay = [3, 6].includes(today.getDay());
     return (
-      <div className="flex flex-col gap-4 -mx-4 -mt-5 px-4 pt-4">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-[10px] uppercase" style={{ color: "#4a4a50", letterSpacing: 1.5 }}>
-              {format(today, "EEEE, d. MMMM", { locale: de })}
-            </p>
+      <div style={{ background: "#050506", minHeight: "100vh", padding: "16px 16px 100px", margin: "-20px -16px 0" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <div style={{ fontSize: 20, fontWeight: 600, color: "#e8e8ec", letterSpacing: -0.5 }}>halflife<span style={{ color: "#E8893C", fontWeight: 300 }}>.</span></div>
+          <div style={{ width: 32, height: 32, borderRadius: "50%", border: "1.5px solid #E8893C", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#E8893C", fontWeight: 500 }}>V</div>
+        </div>
+        <div style={{ fontSize: 10, letterSpacing: 2, color: "#5a5a62", textTransform: "uppercase" as const, marginBottom: 16 }}>{format(today, "EEEE, d. MMMM", { locale: de })}</div>
+
+        <div style={{ background: "#0c0c0f", borderRadius: 16, padding: 16, marginBottom: 12 }}>
+          <div style={{ fontSize: 10, letterSpacing: 2, color: "#5a5a62", textTransform: "uppercase" as const, marginBottom: 8 }}>Naechste Injektion</div>
+          <div style={{ fontSize: 18, fontWeight: 600, color: "#e8e8ec" }}>{isTrtDay ? "Heute — 60mg" : "Samstag — 60mg"}</div>
+          <div style={{ fontSize: 13, color: "#a0a0a8", marginTop: 4 }}>Test Cypionate · SubQ · 0.2ml</div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+          <div style={{ background: "#0c0c0f", borderRadius: 16, padding: 20, textAlign: "center" as const }}>
+            <div style={{ fontSize: 32, fontWeight: 600, color: "#E8893C" }}>{scores?.readiness ?? "--"}</div>
+            <div style={{ fontSize: 10, letterSpacing: 2, color: "#5a5a62", textTransform: "uppercase" as const, marginTop: 4 }}>Readiness</div>
           </div>
-          <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold"
-            style={{ border: "1.5px solid #E8893C", color: "#E8893C" }}>
-            {user.name[0]}{user.name.split(" ")[1]?.[0] || ""}
+          <div style={{ background: "#0c0c0f", borderRadius: 16, padding: 20, textAlign: "center" as const }}>
+            <div style={{ fontSize: 32, fontWeight: 600, color: "#E8893C" }}>{scores?.sleep ?? "--"}</div>
+            <div style={{ fontSize: 10, letterSpacing: 2, color: "#5a5a62", textTransform: "uppercase" as const, marginTop: 4 }}>Sleep</div>
           </div>
         </div>
 
-        {/* 1. Next Injection */}
-        <div className="p-4 rounded-xl" style={{ background: "#0c0c0f" }}>
-          <p className="text-[10px] uppercase mb-2" style={{ color: "#4a4a50", letterSpacing: 1.5 }}>Naechste Injektion</p>
-          {isTrtDay ? (
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-lg font-bold" style={{ color: "#e8e8ec" }}>Heute — 60mg</p>
-                <p className="text-xs" style={{ color: "#6b6b70" }}>Test Cypionate · SubQ · 0.2ml</p>
-              </div>
-              <Link href="/supplements?tab=Protokolle">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "rgba(232,137,60,0.10)", border: "1px solid rgba(232,137,60,0.20)" }}>
-                  <Syringe size={18} style={{ color: "#E8893C" }} />
-                </div>
-              </Link>
+        <div style={{ background: "#0c0c0f", borderRadius: 16, padding: 16, marginBottom: 12 }}>
+          <div style={{ fontSize: 10, letterSpacing: 2, color: "#5a5a62", textTransform: "uppercase" as const, marginBottom: 8 }}>Naechste Einnahme</div>
+          <div style={{ fontSize: 15, fontWeight: 500, color: "#e8e8ec" }}>19:00 — Abend</div>
+          <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 6, marginTop: 8 }}>
+            {["Magnesium", "Ashwagandha", "Glycin", "Kupfer"].map((s) => (
+              <span key={s} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 12, background: "rgba(232,137,60,0.06)", border: "0.5px solid rgba(232,137,60,0.15)", color: "#E8893C" }}>{s}</span>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ background: "#0c0c0f", borderRadius: 16, padding: 16, marginBottom: 12 }}>
+          <div style={{ fontSize: 10, letterSpacing: 2, color: "#5a5a62", textTransform: "uppercase" as const, marginBottom: 8 }}>TRT Protokoll</div>
+          <div style={{ fontSize: 14, color: "#a0a0a8" }}>120mg/Woche · 2x Mi+Sa · Cypionate</div>
+          <div style={{ fontSize: 13, color: "#E8893C", marginTop: 6 }}>Naechster Pin: {isTrtDay ? "Heute" : "Samstag"}</div>
+        </div>
+
+        <div style={{ background: "#0c0c0f", borderRadius: 16, padding: 16, marginBottom: 12 }}>
+          <div style={{ fontSize: 10, letterSpacing: 2, color: "#5a5a62", textTransform: "uppercase" as const, marginBottom: 12 }}>Blutwerte</div>
+          {[{ n: "Total T", v: "847 ng/dL", c: "#34d399" }, { n: "Haematokrit", v: "51.8%", c: "#E8893C" }, { n: "Oestradiol", v: "31 pg/mL", c: "#34d399" }, { n: "Vitamin D", v: "62 ng/mL", c: "#34d399" }, { n: "PSA", v: "0.8 ng/mL", c: "#34d399" }].map((m) => (
+            <div key={m.n} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "0.5px solid #111114" }}>
+              <span style={{ fontSize: 13, color: "#a0a0a8" }}>{m.n}</span>
+              <span style={{ fontSize: 13, fontWeight: 500, color: m.c }}>{m.v}</span>
             </div>
-          ) : (
+          ))}
+        </div>
+
+        <div style={{ background: "rgba(232,137,60,0.04)", borderRadius: 16, padding: 16 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#E8893C", marginTop: 6, flexShrink: 0 }} />
             <div>
-              <p className="text-sm font-medium" style={{ color: "#e8e8ec" }}>
-                {nextTrtDays === 0 ? "Heute" : format(nextTrtDate, "EEEE, d. MMM", { locale: de })}
-              </p>
-              <p className="text-xs" style={{ color: "#6b6b70" }}>In {nextTrtDays} Tagen · 60mg SubQ</p>
-            </div>
-          )}
-        </div>
-
-        {/* 2. Oura Scores */}
-        {scores && (
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col items-center p-4 rounded-xl" style={{ background: "#0c0c0f" }}>
-              <ScoreRing value={scores.readiness ?? null} label="Readiness" color={appAccentColor} size={72} />
-            </div>
-            <div className="flex flex-col items-center p-4 rounded-xl" style={{ background: "#0c0c0f" }}>
-              <ScoreRing value={scores.sleep ?? null} label="Sleep" color="#79C0FF" size={72} />
+              <div style={{ fontSize: 13, fontWeight: 500, color: "#E8893C" }}>Haematokrit beobachten</div>
+              <div style={{ fontSize: 12, color: "#a0a0a8", marginTop: 2, lineHeight: 1.5 }}>In der Literatur wird ab 52% eine aerztliche Ruecksprache empfohlen.</div>
             </div>
           </div>
-        )}
-
-        {/* Oura metrics row */}
-        {oura && (
-          <div className="flex gap-0 rounded-xl overflow-hidden" style={{ background: "#0c0c0f" }}>
-            {[
-              { label: "HRV", value: oura.avg_hrv ? Math.round(oura.avg_hrv) : null, unit: "ms" },
-              { label: "Puls", value: oura.lowest_hr || oura.resting_hr || null, unit: "bpm" },
-              { label: "Steps", value: oura.steps || null, unit: "" },
-            ].filter((m) => m.value != null).map((m, i, arr) => (
-              <div key={m.label} className="flex-1 text-center py-3"
-                style={{ borderRight: i < arr.length - 1 ? "0.5px solid #111114" : "none" }}>
-                <p className="text-sm font-bold" style={{ color: "#e8e8ec" }}>{typeof m.value === "number" && m.value > 999 ? `${(m.value / 1000).toFixed(1)}k` : m.value}</p>
-                <p className="text-[9px]" style={{ color: "#6b6b70" }}>{m.label} {m.unit}</p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* 3. Protocol Alerts */}
-        {alerts.length > 0 && (
-          <div>
-            <p className="text-[10px] uppercase mb-2" style={{ color: "#4a4a50", letterSpacing: 1.5 }}>Alerts</p>
-            {alerts.slice(0, 2).map((a, i) => (
-              <div key={i} className="flex items-start gap-2 p-3 rounded-xl mb-2" style={{ background: "rgba(232,137,60,0.06)", border: "none" }}>
-                <AlertTriangle size={14} style={{ color: "#E8893C", marginTop: 2, flexShrink: 0 }} />
-                <div>
-                  <p className="text-xs font-medium" style={{ color: "#e8e8ec" }}>{a.message}</p>
-                  <p className="text-[10px]" style={{ color: "#6b6b70" }}>{a.action}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* 4. Bloodwork Snapshot */}
-        {Object.keys(bloodwork).length > 0 && (
-          <div>
-            <p className="text-[10px] uppercase mb-2" style={{ color: "#4a4a50", letterSpacing: 1.5 }}>Blutwerte</p>
-            <div className="grid grid-cols-3 gap-2">
-              {BW_KEY_MARKERS.filter((m) => bloodwork[m.key]).map((m) => {
-                const v = bloodwork[m.key].wert;
-                const ok = v <= m.max;
-                return (
-                  <div key={m.key} className="p-2.5 rounded-xl text-center" style={{ background: "#0c0c0f" }}>
-                    <p className="text-sm font-bold" style={{ color: ok ? "#34d399" : "#E8893C" }}>{v}</p>
-                    <p className="text-[9px]" style={{ color: "#6b6b70" }}>{m.label}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* 5. Next Supplement */}
-        <div className="p-4 rounded-xl" style={{ background: "#0c0c0f" }}>
-          <p className="text-[10px] uppercase mb-2" style={{ color: "#4a4a50", letterSpacing: 1.5 }}>Supplements</p>
-          {nextSlot ? (
-            <div className="flex items-center gap-3">
-              <Clock size={16} style={{ color: "var(--accent)" }} />
-              <div>
-                <p className="text-sm font-medium" style={{ color: "#e8e8ec" }}>
-                  {SUPPLEMENT_SCHEDULE[nextSlot[0] as keyof typeof SUPPLEMENT_SCHEDULE]?.time} {SUPPLEMENT_SCHEDULE[nextSlot[0] as keyof typeof SUPPLEMENT_SCHEDULE]?.label}
-                </p>
-                <p className="text-[10px]" style={{ color: "#6b6b70" }}>
-                  {(SUPPLEMENT_SCHEDULE[nextSlot[0] as keyof typeof SUPPLEMENT_SCHEDULE]?.items || []).join(", ")}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <Check size={16} style={{ color: "var(--accent)" }} />
-              <p className="text-xs" style={{ color: "var(--accent)" }}>Alle Einnahmen erledigt</p>
-            </div>
-          )}
         </div>
       </div>
     );

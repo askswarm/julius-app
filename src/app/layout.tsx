@@ -9,6 +9,7 @@ import ChatFAB from "@/components/ChatFAB";
 import PushSetup from "@/components/PushSetup";
 import AppShell from "@/components/AppShell";
 import HalflifeDisclaimer from "@/components/HalflifeDisclaimer";
+import HalflifeChatIntro from "@/components/HalflifeChatIntro";
 import { isHalflife } from "@/lib/appConfig";
 
 const font = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
@@ -44,6 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               {isHalflife ? <HalflifeNav /> : <BottomNav />}
               {!isHalflife && <ChatFAB />}
               {isHalflife && <HalflifeDisclaimer />}
+              {isHalflife && <HalflifeChatIntro />}
               <PushSetup />
             </AppShell>
           </UserProvider>

@@ -1,8 +1,10 @@
 "use client";
 
 import { halflifeTheme as ht } from "@/lib/appConfig";
+import { useRouter } from "next/navigation";
 
 export default function ProtocolPage() {
+  const router = useRouter();
   return (
     <div style={{ background: ht.bg, minHeight: "100vh", padding: "16px 16px 100px" }}>
       <h1 style={{ fontSize: 18, fontWeight: 600, color: ht.text, marginBottom: 20 }}>Protocol</h1>
@@ -12,6 +14,7 @@ export default function ProtocolPage() {
         <div style={{ fontSize: 13, color: ht.text2, marginTop: 4 }}>2x pro Woche · Mi + Sa · SubQ · 0.2ml</div>
         <div style={{ fontSize: 13, color: ht.accent, marginTop: 8 }}>Letzter Pin: Mittwoch, 02.04.</div>
         <button style={{ marginTop: 12, width: "100%", padding: "12px", borderRadius: 12, border: `0.5px solid ${ht.accentBorder}`, background: ht.accentDim, color: ht.accent, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Injektion loggen</button>
+        <div onClick={() => router.push("/coach?prompt=" + encodeURIComponent("Ich habe gerade meine TRT Injektion gemacht"))} style={{ fontSize: 11, color: ht.accent, textDecoration: "underline", cursor: "pointer", textAlign: "center" as const, marginTop: 8 }}>oder per Chat eingeben</div>
       </div>
       <div style={{ background: ht.card, borderRadius: 16, padding: 16, marginBottom: 12 }}>
         <div style={{ fontSize: 10, letterSpacing: 2, color: ht.text3, textTransform: "uppercase" as const, marginBottom: 8 }}>Injektions-Verlauf</div>
@@ -27,6 +30,7 @@ export default function ProtocolPage() {
         <div style={{ fontSize: 10, letterSpacing: 2, color: ht.text3, textTransform: "uppercase" as const, marginBottom: 8 }}>Aktive Peptide</div>
         <div style={{ fontSize: 14, color: ht.text2 }}>Noch keine Peptide eingerichtet</div>
         <button style={{ marginTop: 12, padding: "8px 16px", borderRadius: 12, border: `0.5px solid ${ht.accentBorder}`, background: ht.accentDim, color: ht.accent, fontSize: 13, cursor: "pointer" }}>Peptid hinzufuegen</button>
+        <div onClick={() => router.push("/coach?prompt=" + encodeURIComponent("Ich moechte ein neues Peptid hinzufuegen"))} style={{ fontSize: 11, color: ht.accent, textDecoration: "underline", cursor: "pointer", marginTop: 8 }}>oder per Chat eingeben</div>
       </div>
     </div>
   );

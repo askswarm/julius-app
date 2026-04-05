@@ -14,14 +14,15 @@ const WEARABLES = ["Oura Ring", "Apple Watch", "Whoop", "Garmin", "Keins"];
 export default function OnboardingPage() {
   const router = useRouter();
   const [msgs, setMsgs] = useState<Msg[]>([]);
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(-1);
   const [sel, setSel] = useState<string[]>([]);
+  const [nameInput, setNameInput] = useState("");
   const [data, setData] = useState<Record<string, unknown>>({});
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (localStorage.getItem("halflife-onboarding-completed")) { router.replace("/"); return; }
-    addBot("Was bringt dich zu halflife?");
+    addBot("Wie heisst du?");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -37,6 +38,15 @@ export default function OnboardingPage() {
     const multi = step === 0;
     if (multi) setSel((p) => p.includes(c) ? p.filter((x) => x !== c) : [...p, c]);
     else setSel([c]);
+  }
+
+  function submitName() {
+    const name = nameInput.trim();
+    if (!name) return;
+    setData((d) => ({ ...d, name }));
+    addUser(name);
+    setNameInput("");
+    setTimeout(() => { addBot("Was bringt dich zu halflife?"); setStep(0); }, 400);
   }
 
   function confirm() {
@@ -73,6 +83,7 @@ export default function OnboardingPage() {
       addUser(sel[0]);
       setTimeout(() => {
         const summary: Record<string, string> = {};
+        if (data.name) summary["Name"] = data.name as string;
         if (data.focus) summary["Fokus"] = (data.focus as string[]).join(", ");
         if (data.compound && data.compound !== "Kein TRT") summary["TRT"] = `${data.compound}, ${data.dose}, ${data.frequency}`;
         summary["Wearable"] = sel[0];
@@ -96,7 +107,7 @@ export default function OnboardingPage() {
   }
 
   const chips = step === 0 ? FOCUS : step === 1 ? COMPOUNDS : step === 2 ? DOSES : step === 3 ? FREQS : step === 5 ? WEARABLES : [];
-  const phase = step <= 1 ? 1 : step <= 4 ? 2 : step === 5 ? 3 : 4;
+  const phase = step < 0 ? 1 : step <= 1 ? 1 : step <= 4 ? 2 : step === 5 ? 3 : 4;
 
   return (
     <div style={{ background: "#050506", minHeight: "100vh", display: "flex", flexDirection: "column" as const }}>
@@ -140,6 +151,18 @@ export default function OnboardingPage() {
             )}
           </div>
         ))}
+
+        {/* Name input */}
+        {step === -1 && (
+          <div style={{ marginTop: 4, display: "flex", gap: 8 }}>
+            <input value={nameInput} onChange={(e) => setNameInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") submitName(); }}
+              placeholder="Dein Name" autoFocus
+              style={{ flex: 1, background: "#111114", border: "0.5px solid #1a1a1e", borderRadius: 20, padding: "10px 14px", color: "#e8e8ec", fontSize: 14, outline: "none" }} />
+            {nameInput.trim() && (
+              <button onClick={submitName} style={{ padding: "8px 16px", borderRadius: 20, background: "rgba(232,137,60,0.1)", border: "0.5px solid rgba(232,137,60,0.2)", color: "#E8893C", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>Weiter</button>
+            )}
+          </div>
+        )}
 
         {/* Chips */}
         {chips.length > 0 && step !== 4 && step !== 6 && (

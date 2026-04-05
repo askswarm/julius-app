@@ -1,6 +1,7 @@
 "use client";
 
 import { halflifeTheme as ht } from "@/lib/appConfig";
+import { useRouter } from "next/navigation";
 
 const SLOTS = [
   { time: "07:00", label: "Nuechtern", supps: ["Spermidin", "NAC 600mg", "Taurin 1.5g"], done: true },
@@ -11,6 +12,7 @@ const SLOTS = [
 ];
 
 export default function StackPage() {
+  const router = useRouter();
   return (
     <div style={{ background: ht.bg, minHeight: "100vh", padding: "16px 16px 100px" }}>
       <h1 style={{ fontSize: 18, fontWeight: 600, color: ht.text, marginBottom: 20 }}>Stack</h1>
@@ -25,6 +27,8 @@ export default function StackPage() {
           </div>
         </div>
       ))}
+      <button style={{ width: "100%", marginTop: 16, padding: 12, borderRadius: 12, border: `0.5px solid ${ht.accentBorder}`, background: ht.accentDim, color: ht.accent, fontSize: 13, fontWeight: 500, cursor: "pointer" }}>Supplement hinzufuegen</button>
+      <div onClick={() => router.push("/coach?prompt=" + encodeURIComponent("Ich moechte ein neues Supplement hinzufuegen"))} style={{ fontSize: 11, color: ht.accent, textDecoration: "underline", cursor: "pointer", textAlign: "center" as const, marginTop: 8 }}>oder per Chat eingeben</div>
     </div>
   );
 }

@@ -39,6 +39,15 @@ const HOME_POSTERS: Record<string, string> = {
   maria: "https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=1200&h=600&fit=crop",
 };
 
+function getGreeting() {
+  const hour = new Date().getHours();
+  const name = typeof window !== "undefined" ? (JSON.parse(localStorage.getItem("halflife-protocol") || "{}").name || "dort") : "dort";
+  if (hour < 12) return "Guten Morgen, " + name;
+  if (hour < 17) return "Hallo, " + name;
+  if (hour < 21) return "Guten Abend, " + name;
+  return "Gute Nacht, " + name;
+}
+
 interface OuraData {
   steps?: number; active_calories?: number; resting_hr?: number;
   avg_hrv?: number; lowest_hr?: number; stress_score?: number;
@@ -145,7 +154,27 @@ export default function HomePage() {
           <div style={{ fontSize: 20, fontWeight: 600, color: "#e8e8ec", letterSpacing: -0.5 }}>halflife<span style={{ color: "#E8893C", fontWeight: 300 }}>.</span></div>
           <Link href="/settings" style={{ textDecoration: "none" }}><div style={{ width: 32, height: 32, borderRadius: "50%", border: "1.5px solid #E8893C", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#E8893C", fontWeight: 500 }}>V</div></Link>
         </div>
-        <div style={{ fontSize: 10, letterSpacing: 2, color: "#5a5a62", textTransform: "uppercase" as const, marginBottom: 16 }}>{format(today, "EEEE, d. MMMM", { locale: de })}</div>
+        <div style={{ fontSize: 22, fontWeight: 600, color: "#e8e8ec", marginBottom: 4 }}>{getGreeting()}</div>
+        <div style={{ fontSize: 12, color: "#5a5a62", marginBottom: 16 }}>{format(today, "EEEE, d. MMMM", { locale: de })}</div>
+
+        {/* Chat Widget */}
+        <div style={{ background: "linear-gradient(180deg, #0c0c0f, #111114)", borderRadius: 20, padding: 20, marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E8893C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>
+            <div style={{ fontSize: 11, letterSpacing: 1, color: "#5a5a62", textTransform: "uppercase" as const }}>Dein Halflife Companion</div>
+          </div>
+          <div style={{ fontSize: 17, fontWeight: 500, color: "#e8e8ec", marginTop: 12 }}>Was moechtest du wissen?</div>
+          <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 6, marginTop: 12 }}>
+            {[
+              { label: "Blutwerte eintragen", prompt: "Ich moechte meine Blutwerte eintragen" },
+              { label: "Was soll ich essen?", prompt: "Was soll ich heute essen" },
+              { label: "Supplement checken", prompt: "Check meinen Supplement Stack" },
+            ].map((c) => (
+              <button key={c.label} onClick={() => router.push(`/coach?prompt=${encodeURIComponent(c.prompt)}`)} style={{ fontSize: 12, padding: "8px 14px", borderRadius: 20, background: "rgba(232,137,60,0.06)", border: "0.5px solid rgba(232,137,60,0.15)", color: "#E8893C", cursor: "pointer" }}>{c.label}</button>
+            ))}
+          </div>
+          <button onClick={() => router.push("/coach")} style={{ width: "100%", marginTop: 16, padding: 14, borderRadius: 14, background: "#E8893C", color: "#050506", fontWeight: 600, fontSize: 15, border: "none", cursor: "pointer", textAlign: "center" as const }}>Chat starten</button>
+        </div>
 
         <div style={{ background: "#0c0c0f", borderRadius: 16, padding: 16, marginBottom: 12 }}>
           <div style={{ fontSize: 10, letterSpacing: 2, color: "#5a5a62", textTransform: "uppercase" as const, marginBottom: 8 }}>Naechste Injektion</div>
@@ -199,6 +228,8 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+
+        <div style={{ fontSize: 10, color: "#3a3a42", textAlign: "center" as const, padding: 16, marginTop: 20, lineHeight: 1.5 }}>halflife ersetzt keine aerztliche Beratung. Besprich Aenderungen an deinem Protokoll immer mit deinem Arzt.</div>
       </div>
     );
   }

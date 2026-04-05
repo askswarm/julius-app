@@ -1,8 +1,10 @@
 "use client";
 
 import { halflifeTheme as ht } from "@/lib/appConfig";
+import { useRouter } from "next/navigation";
 
 export default function BloodPage() {
+  const router = useRouter();
   return (
     <div style={{ background: ht.bg, minHeight: "100vh", padding: "16px 16px 100px" }}>
       <h1 style={{ fontSize: 18, fontWeight: 600, color: ht.text, marginBottom: 20 }}>Bloodwork</h1>
@@ -25,6 +27,7 @@ export default function BloodPage() {
         <button style={{ padding: 12, borderRadius: 12, border: `0.5px solid ${ht.accentBorder}`, background: ht.accentDim, color: ht.accent, fontSize: 13, cursor: "pointer" }}>Foto scannen</button>
         <button style={{ padding: 12, borderRadius: 12, border: `0.5px solid ${ht.border}`, background: ht.card, color: ht.text2, fontSize: 13, cursor: "pointer" }}>Manuell eingeben</button>
       </div>
+      <div onClick={() => router.push("/coach?prompt=" + encodeURIComponent("Ich moechte meine Blutwerte eintragen"))} style={{ fontSize: 11, color: ht.accent, textDecoration: "underline", cursor: "pointer", textAlign: "center" as const, marginTop: 10 }}>oder per Chat eingeben</div>
     </div>
   );
 }

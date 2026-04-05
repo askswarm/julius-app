@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { Dumbbell, UtensilsCrossed, MessageCircle, TrendingUp, TrendingDown, Activity, Heart, Footprints, Flame } from "lucide-react";
@@ -45,7 +46,9 @@ interface OuraData {
 }
 
 export default function HomePage() {
+  const router = useRouter();
   const { user, userKey } = useUser();
+  const [halflifeReady, setHalflifeReady] = useState(!isHalflife);
   const [scores, setScores] = useState<DailyScore | null>(null);
   const [macros, setMacros] = useState<MacroSummary>({ kcal: 0, protein_g: 0, carbs_g: 0, fett_g: 0, wasser_ml: 0 });
   const [training, setTraining] = useState<TrainingEntry[]>([]);
@@ -53,6 +56,17 @@ export default function HomePage() {
   const [macroAdj, setMacroAdj] = useState({ kcal: 0, protein: 0 });
   const [oura, setOura] = useState<OuraData | null>(null);
   const [yesterday, setYesterday] = useState<OuraData | null>(null);
+
+  // Halflife onboarding redirect
+  useEffect(() => {
+    if (isHalflife && typeof window !== "undefined") {
+      if (!localStorage.getItem("halflife-onboarding-completed")) {
+        router.push("/onboarding");
+        return;
+      }
+      setHalflifeReady(true);
+    }
+  }, [router]);
 
   useEffect(() => {
     const id = user.id;
@@ -123,12 +137,13 @@ export default function HomePage() {
 
   // === HALFLIFE HOME ===
   if (isHalflife) {
+    if (!halflifeReady) return <div style={{ background: "#050506", minHeight: "100vh" }} />;
     const isTrtDay = [3, 6].includes(today.getDay());
     return (
       <div style={{ background: "#050506", minHeight: "100vh", padding: "16px 16px 100px", margin: "-20px -16px 0" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
           <div style={{ fontSize: 20, fontWeight: 600, color: "#e8e8ec", letterSpacing: -0.5 }}>halflife<span style={{ color: "#E8893C", fontWeight: 300 }}>.</span></div>
-          <div style={{ width: 32, height: 32, borderRadius: "50%", border: "1.5px solid #E8893C", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#E8893C", fontWeight: 500 }}>V</div>
+          <Link href="/settings" style={{ textDecoration: "none" }}><div style={{ width: 32, height: 32, borderRadius: "50%", border: "1.5px solid #E8893C", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#E8893C", fontWeight: 500 }}>V</div></Link>
         </div>
         <div style={{ fontSize: 10, letterSpacing: 2, color: "#5a5a62", textTransform: "uppercase" as const, marginBottom: 16 }}>{format(today, "EEEE, d. MMMM", { locale: de })}</div>
 

@@ -22,6 +22,8 @@ import ScoreRing from "@/components/ScoreRing";
 import MacroBar from "@/components/MacroBar";
 import Card from "@/components/Card";
 import AutophagieTimer from "@/components/AutophagieTimer";
+import ProteinRing from "@/components/ProteinRing";
+import WaterGlass from "@/components/WaterGlass";
 
 const GRADIENTS = {
   protein: "linear-gradient(90deg, #2EA67A, #7EE2B8)",
@@ -107,6 +109,42 @@ export default function HomePage() {
     return Math.round(cur - prev);
   }
 
+  // Nutrition dashboard state (both modes)
+  const nutriKey = isHalflife ? "halflife-daily-nutrition" : "julius-daily-nutrition";
+  const [nutri, setNutri] = useState<{ protein: number; water: number; fiber: number }>({ protein: 0, water: 0, fiber: 0 });
+  const [waterToast, setWaterToast] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const today = new Date().toISOString().slice(0, 10);
+    try {
+      const raw = localStorage.getItem(nutriKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.date === today) {
+          setNutri({ protein: parsed.protein || 0, water: parsed.water || 0, fiber: parsed.fiber || 0 });
+          return;
+        }
+      }
+      localStorage.setItem(nutriKey, JSON.stringify({ date: today, protein: 0, water: 0, fiber: 0 }));
+    } catch {}
+  }, [nutriKey]);
+
+  function addWater(ml: number) {
+    setNutri((p) => {
+      const next = { ...p, water: p.water + ml };
+      const today = new Date().toISOString().slice(0, 10);
+      try { localStorage.setItem(nutriKey, JSON.stringify({ date: today, ...next })); } catch {}
+      return next;
+    });
+    setWaterToast(ml);
+    setTimeout(() => setWaterToast(null), 1500);
+  }
+
+  const proteinGoal = isHalflife ? 120 : (user?.protein_ziel_g || 120);
+  const fiberGoal = 30;
+  const ringColor = isHalflife ? "#E8893C" : "#7EE2B8";
+
   // Halflife-specific data
   const [bloodwork, setBloodwork] = useState<Record<string, { wert: number; datum: string }>>({});
   const [supplements, setSupplements] = useState<string[]>([]);
@@ -174,6 +212,31 @@ export default function HomePage() {
             ))}
           </div>
           <button onClick={() => router.push("/coach")} style={{ width: "100%", marginTop: 16, padding: 14, borderRadius: 14, background: "#E8893C", color: "#050506", fontWeight: 600, fontSize: 15, border: "none", cursor: "pointer", textAlign: "center" as const }}>Chat starten</button>
+        </div>
+
+        {/* Nutrition Dashboard Widget */}
+        <div style={{ background: "#0c0c0f", borderRadius: 20, padding: 20, marginBottom: 16, position: "relative" as const }}>
+          {waterToast && (
+            <div style={{ position: "absolute" as const, top: 8, left: "50%", transform: "translateX(-50%)", fontSize: 11, padding: "4px 10px", borderRadius: 10, background: "rgba(96,165,250,0.12)", color: "#60A5FA", animation: "hlFade 1.5s ease" }}>+{waterToast}ml</div>
+          )}
+          <style>{`@keyframes hlFade { 0% { opacity: 0; transform: translate(-50%, -4px) } 20%,80% { opacity: 1; transform: translate(-50%, 0) } 100% { opacity: 0 } }`}</style>
+          <div style={{ display: "flex", justifyContent: "space-around", alignItems: "center", gap: 16 }}>
+            <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
+              <ProteinRing current={nutri.protein} goal={proteinGoal} color={ringColor} />
+            </div>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column" as const, alignItems: "center" }}>
+              <WaterGlass current={nutri.water} onAdd={addWater} />
+            </div>
+          </div>
+          <div style={{ marginTop: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+              <span style={{ fontSize: 9, letterSpacing: 1.5, color: "#5a5a62", textTransform: "uppercase" as const }}>Ballaststoffe</span>
+              <span style={{ fontSize: 11, color: "#a0a0a8" }}>{nutri.fiber}g / {fiberGoal}g</span>
+            </div>
+            <div style={{ height: 5, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${Math.min(nutri.fiber / fiberGoal * 100, 100)}%`, background: "#34d399", borderRadius: 3, transition: "width 0.6s ease" }} />
+            </div>
+          </div>
         </div>
 
         <div style={{ background: "#0c0c0f", borderRadius: 16, padding: 16, marginBottom: 12 }}>
@@ -279,6 +342,30 @@ export default function HomePage() {
           <ScoreRing value={scores?.sleep ?? null} label="Schlaf" color="#79C0FF" />
           <ScoreRing value={Math.min(load, 1000)} max={1000} label="Load 48h" color="#F97316" />
         </Card>
+
+        {/* Nutrition Dashboard Widget */}
+        <div style={{ background: "var(--card)", borderRadius: 20, padding: 20, border: "1px solid var(--card-border)", position: "relative" as const }}>
+          {waterToast && (
+            <div style={{ position: "absolute" as const, top: 8, left: "50%", transform: "translateX(-50%)", fontSize: 11, padding: "4px 10px", borderRadius: 10, background: "rgba(96,165,250,0.12)", color: "#60A5FA" }}>+{waterToast}ml</div>
+          )}
+          <div style={{ display: "flex", justifyContent: "space-around", alignItems: "center", gap: 16 }}>
+            <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
+              <ProteinRing current={nutri.protein} goal={proteinGoal} color={ringColor} />
+            </div>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column" as const, alignItems: "center" }}>
+              <WaterGlass current={nutri.water} goal={user.wasser_ziel_ml || 3000} onAdd={addWater} />
+            </div>
+          </div>
+          <div style={{ marginTop: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+              <span style={{ fontSize: 9, letterSpacing: 1.5, color: "var(--text3)", textTransform: "uppercase" as const }}>Ballaststoffe</span>
+              <span style={{ fontSize: 11, color: "var(--text2)" }}>{nutri.fiber}g / {fiberGoal}g</span>
+            </div>
+            <div style={{ height: 5, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${Math.min(nutri.fiber / fiberGoal * 100, 100)}%`, background: "#34d399", borderRadius: 3, transition: "width 0.6s ease" }} />
+            </div>
+          </div>
+        </div>
 
         {/* METRIC BAR — compact single row */}
         {oura && (

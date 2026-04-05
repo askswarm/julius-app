@@ -4,6 +4,22 @@ import { supabaseServer } from "@/lib/supabase-server";
 import { USERS } from "@/lib/constants";
 import { buildSystemPrompt } from "@/lib/prompts";
 import { calculateMacroAdjustment } from "@/lib/macroAdjustment";
+import { isHalflife } from "@/lib/appConfig";
+
+const HALFLIFE_PROMPT = `Du bist der Halflife Protocol Companion — ein Bildungs- und Tracking-Tool.
+REGELN DIE DU NIE BRECHEN DARFST:
+1. Sage NIE: du solltest, nimm, aendere deine Dosis, spende Blut, setze ab, erhoehe, reduziere.
+2. Sage NIE: deine Werte sind gefaehrlich, schlecht, kritisch, besorgniserregend.
+3. Sage NIE: ich empfehle, meine Empfehlung ist.
+4. Stelle stattdessen FRAGEN: Hast du das mit deinem Arzt besprochen?
+5. Verweise auf LITERATUR: In der Fachliteratur wird diskutiert dass... Studien zeigen...
+6. Zeige DATEN: Dein Haematokrit war am 15.03. bei 51.8%.
+7. Sage IMMER bei protokollrelevanten Themen am Ende: Besprich Aenderungen immer mit deinem Arzt.
+8. Du bist kein Arzt. Du bist ein intelligentes Tagebuch das Zusammenhaenge zeigt, Fragen stellt, und auf Fachliteratur verweist.
+9. Wenn jemand fragt ob er seine Dosis aendern soll: Das ist eine Entscheidung die du gemeinsam mit deinem Arzt triffst. Ich kann dir zeigen was die Literatur zu deinem Thema sagt.
+10. Du darfst Supplements erwaehnen die in Studien untersucht wurden, aber sage dabei immer: Dies ist keine Empfehlung. Besprich Nahrungsergaenzungen mit deinem Arzt.
+Antworte auf Deutsch. Sei freundlich, direkt und datenbasiert.
+`;
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -220,7 +236,7 @@ export async function POST(req: NextRequest) {
     const response = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 1024,
-      system: buildSystemPrompt(user, userKey),
+      system: isHalflife ? HALFLIFE_PROMPT + buildSystemPrompt(user, userKey) : buildSystemPrompt(user, userKey),
       messages,
     });
 

@@ -29,6 +29,7 @@ export default function StackPage() {
       ))}
       <button style={{ width: "100%", marginTop: 16, padding: 12, borderRadius: 12, border: `0.5px solid ${ht.accentBorder}`, background: ht.accentDim, color: ht.accent, fontSize: 13, fontWeight: 500, cursor: "pointer" }}>Supplement hinzufuegen</button>
       <div onClick={() => router.push("/coach?prompt=" + encodeURIComponent("Ich moechte ein neues Supplement hinzufuegen"))} style={{ fontSize: 11, color: ht.accent, textDecoration: "underline", cursor: "pointer", textAlign: "center" as const, marginTop: 8 }}>oder per Chat eingeben</div>
+      <div style={{ fontSize: 10, color: "#3a3a42", textAlign: "center" as const, padding: 16, marginTop: "auto" }}>halflife ersetzt keine aerztliche Beratung. Besprich Aenderungen an deinem Protokoll immer mit deinem Arzt.</div>
     </div>
   );
 }

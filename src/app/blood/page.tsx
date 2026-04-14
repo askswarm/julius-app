@@ -28,6 +28,7 @@ export default function BloodPage() {
         <button style={{ padding: 12, borderRadius: 12, border: `0.5px solid ${ht.border}`, background: ht.card, color: ht.text2, fontSize: 13, cursor: "pointer" }}>Manuell eingeben</button>
       </div>
       <div onClick={() => router.push("/coach?prompt=" + encodeURIComponent("Ich moechte meine Blutwerte eintragen"))} style={{ fontSize: 11, color: ht.accent, textDecoration: "underline", cursor: "pointer", textAlign: "center" as const, marginTop: 10 }}>oder per Chat eingeben</div>
+      <div style={{ fontSize: 10, color: "#3a3a42", textAlign: "center" as const, padding: 16, marginTop: "auto" }}>halflife ersetzt keine aerztliche Beratung. Besprich Aenderungen an deinem Protokoll immer mit deinem Arzt.</div>
     </div>
   );
 }

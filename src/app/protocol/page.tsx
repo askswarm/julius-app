@@ -32,6 +32,7 @@ export default function ProtocolPage() {
         <button style={{ marginTop: 12, padding: "8px 16px", borderRadius: 12, border: `0.5px solid ${ht.accentBorder}`, background: ht.accentDim, color: ht.accent, fontSize: 13, cursor: "pointer" }}>Peptid hinzufuegen</button>
         <div onClick={() => router.push("/coach?prompt=" + encodeURIComponent("Ich moechte ein neues Peptid hinzufuegen"))} style={{ fontSize: 11, color: ht.accent, textDecoration: "underline", cursor: "pointer", marginTop: 8 }}>oder per Chat eingeben</div>
       </div>
+      <div style={{ fontSize: 10, color: "#3a3a42", textAlign: "center" as const, padding: 16, marginTop: "auto" }}>halflife ersetzt keine aerztliche Beratung. Besprich Aenderungen an deinem Protokoll immer mit deinem Arzt.</div>
     </div>
   );
 }

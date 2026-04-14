@@ -5,21 +5,7 @@ import { USERS } from "@/lib/constants";
 import { buildSystemPrompt } from "@/lib/prompts";
 import { calculateMacroAdjustment } from "@/lib/macroAdjustment";
 import { isHalflife } from "@/lib/appConfig";
-
-const HALFLIFE_PROMPT = `Du bist der Halflife Protocol Companion — ein Bildungs- und Tracking-Tool.
-REGELN DIE DU NIE BRECHEN DARFST:
-1. Sage NIE: du solltest, nimm, aendere deine Dosis, spende Blut, setze ab, erhoehe, reduziere.
-2. Sage NIE: deine Werte sind gefaehrlich, schlecht, kritisch, besorgniserregend.
-3. Sage NIE: ich empfehle, meine Empfehlung ist.
-4. Stelle stattdessen FRAGEN: Hast du das mit deinem Arzt besprochen?
-5. Verweise auf LITERATUR: In der Fachliteratur wird diskutiert dass... Studien zeigen...
-6. Zeige DATEN: Dein Haematokrit war am 15.03. bei 51.8%.
-7. Sage IMMER bei protokollrelevanten Themen am Ende: Besprich Aenderungen immer mit deinem Arzt.
-8. Du bist kein Arzt. Du bist ein intelligentes Tagebuch das Zusammenhaenge zeigt, Fragen stellt, und auf Fachliteratur verweist.
-9. Wenn jemand fragt ob er seine Dosis aendern soll: Das ist eine Entscheidung die du gemeinsam mit deinem Arzt triffst. Ich kann dir zeigen was die Literatur zu deinem Thema sagt.
-10. Du darfst Supplements erwaehnen die in Studien untersucht wurden, aber sage dabei immer: Dies ist keine Empfehlung. Besprich Nahrungsergaenzungen mit deinem Arzt.
-Antworte auf Deutsch. Sei freundlich, direkt und datenbasiert.
-`;
+import { getHalflifeSystemPrompt } from "@/lib/halflifeSystemPrompt";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -196,11 +182,76 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, chatId, image } = await req.json();
+    const body = await req.json();
+    const { message, chatId, image, stream, userName, userProtocol } = body;
+
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return NextResponse.json({ error: "ANTHROPIC_API_KEY nicht konfiguriert" }, { status: 500 });
+    }
+
     if (!message && !image) {
       return NextResponse.json({ error: "message or image required" }, { status: 400 });
     }
 
+    // ── Halflife streaming path ──────────────────────────────
+    if (isHalflife && stream) {
+      const historyMessages: Anthropic.MessageParam[] = (body.messages || [])
+        .map((m: { role: string; content: string }) => ({ role: m.role as "user" | "assistant", content: m.content }));
+
+      // Build current message content
+      const content: Anthropic.ContentBlockParam[] = [];
+      if (image) {
+        const b64Match = typeof image === "string" && image.match(/^data:(image\/\w+);base64,(.+)$/);
+        if (b64Match) {
+          content.push({
+            type: "image",
+            source: { type: "base64", media_type: b64Match[1] as "image/jpeg" | "image/png" | "image/gif" | "image/webp", data: b64Match[2] },
+          });
+        } else if (typeof image === "string" && !image.startsWith("data:")) {
+          // Raw base64 without data URL prefix
+          content.push({
+            type: "image",
+            source: { type: "base64", media_type: "image/jpeg" as const, data: image },
+          });
+        }
+      }
+      const lastMsg = message || (body.messages?.length ? body.messages[body.messages.length - 1]?.content : null) || "Analysiere dieses Bild.";
+      content.push({ type: "text", text: lastMsg });
+
+      historyMessages.push({ role: "user", content });
+
+      const systemPrompt = getHalflifeSystemPrompt(userName || "User", userProtocol || {});
+
+      const streamResponse = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 2048,
+        system: systemPrompt,
+        messages: historyMessages,
+        stream: true,
+      });
+
+      const encoder = new TextEncoder();
+      const readable = new ReadableStream({
+        async start(controller) {
+          try {
+            for await (const event of streamResponse) {
+              if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+                controller.enqueue(encoder.encode(event.delta.text));
+              }
+            }
+            controller.close();
+          } catch (err) {
+            controller.error(err);
+          }
+        },
+      });
+
+      return new Response(readable, {
+        headers: { "Content-Type": "text/plain; charset=utf-8", "Transfer-Encoding": "chunked" },
+      });
+    }
+
+    // ── Original Julius path (non-streaming) ─────────────────
     const userKey = Object.entries(USERS).find(([, u]) => u.id === chatId)?.[0] || "vincent";
     const user = USERS[userKey];
 
@@ -236,7 +287,7 @@ export async function POST(req: NextRequest) {
     const response = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 1024,
-      system: isHalflife ? HALFLIFE_PROMPT + buildSystemPrompt(user, userKey) : buildSystemPrompt(user, userKey),
+      system: buildSystemPrompt(user, userKey),
       messages,
     });
 
